@@ -18,17 +18,22 @@ class AppAuthManager extends ChangeNotifier {
     _loadAuthState();
   }
 
+  // Check initial auth state and state changes
   Future<void> _loadAuthState() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    _auth.userChanges().listen((user) {
-      if (user != null) {
-        _loggedIn = true;
-        notifyListeners();
-      } else {
-        _loggedIn = false;
-      }
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      final currentUser = _auth.currentUser;
+      _loggedIn = currentUser != null;
       notifyListeners();
-    });
+
+      _auth.userChanges().listen((user) {
+        _loggedIn = user != null;
+        notifyListeners();
+      });
+    } catch (e) {
+      // Handle error (for example, log or show a message)
+      print("Firebase initialization failed: $e");
+    }
   }
 
   // Sign in with email and password
@@ -59,9 +64,9 @@ class AppAuthManager extends ChangeNotifier {
         email: email,
         password: password,
       );
-      return null; 
+      return null;
     } on FirebaseAuthException catch (e) {
-      return _handleAuthError(e); 
+      return _handleAuthError(e);
     } finally {
       _isLoading = false;
       notifyListeners();

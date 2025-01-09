@@ -20,6 +20,7 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Consumer<AppAuthManager>(builder: (context, authState, child) {
+      print('loggedIn State: ${authState.loggedIn}');
       if (authState.loggedIn) {
         return NotesScreen();
       } else {
