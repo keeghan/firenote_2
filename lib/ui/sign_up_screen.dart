@@ -1,5 +1,6 @@
 import 'package:firenote_2/app_auth_manager.dart';
 import 'package:firenote_2/ui/notes_screen.dart';
+import 'package:firenote_2/ui/sign_in_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
@@ -28,11 +29,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _confirmationError;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -50,72 +46,70 @@ class _SignUpScreenState extends State<SignUpScreen> {
           return Stack(
             children: [
               SafeArea(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Create An Account',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w500,
-                          ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Create An Account',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w500,
                         ),
-
-                        // Email
-                        const SizedBox(height: 32),
-                        AuthTextField(
-                          textEditingController: _emailController,
-                          hintText: "Email",
-                          errorText: _emailError,
-                          onChanged: validateEmail,
-                        ),
-
-                        // Password
-                        const SizedBox(height: 16),
-                        AuthPasswordField(
-                          textEditingController: _passwordController,
-                          hintText: 'Enter password',
-                          obscureText: _obscureText,
-                          errorText: _passwordError,
-                          onChanged: validatePassword,
-                          onVissibilityToggle: () {
-                            setState(() => _obscureText = !_obscureText);
-                          },
-                        ),
-
-                        // Password Confirmation
-                        const SizedBox(height: 16),
-                        AuthPasswordField(
-                          textEditingController: _confirmationController,
-                          hintText: 'Confirm password',
-                          obscureText: _obscureConfirmationText,
-                          errorText: _confirmationError,
-                          onChanged: validateConfirmation,
-                          onVissibilityToggle: () {
-                            setState(() => _obscureConfirmationText = !_obscureConfirmationText);
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-                        AuthButton(
-                          text: 'SIGN UP',
-                          onButtonPress: _handleSignUp, // Disable if needed
-                        ),
-
-                        // Sign In Button
-                        const SizedBox(height: 24),
-                        AuthTextButton(
-                          onButtonPress: () {
-                            Navigator.pop(context);
-                          },
-                          text: "Already Have an Account?",
-                        ),
-                      ],
-                    ),
+                      ),
+                
+                      // Email
+                      const SizedBox(height: 32),
+                      AuthTextField(
+                        textEditingController: _emailController,
+                        hintText: "Email",
+                        errorText: _emailError,
+                        onChanged: validateEmail,
+                      ),
+                
+                      // Password
+                      const SizedBox(height: 16),
+                      AuthPasswordField(
+                        textEditingController: _passwordController,
+                        hintText: 'Enter password',
+                        obscureText: _obscureText,
+                        errorText: _passwordError,
+                        onChanged: validatePassword,
+                        onVissibilityToggle: () {
+                          setState(() => _obscureText = !_obscureText);
+                        },
+                      ),
+                
+                      // Password Confirmation
+                      const SizedBox(height: 16),
+                      AuthPasswordField(
+                        textEditingController: _confirmationController,
+                        hintText: 'Confirm password',
+                        obscureText: _obscureConfirmationText,
+                        errorText: _confirmationError,
+                        onChanged: validateConfirmation,
+                        onVissibilityToggle: () {
+                          setState(() => _obscureConfirmationText = !_obscureConfirmationText);
+                        },
+                      ),
+                
+                      const SizedBox(height: 24),
+                      AuthButton(
+                        text: 'SIGN UP',
+                        onButtonPress: _handleSignUp, // Disable if needed
+                      ),
+                
+                      // Sign In Button
+                      const SizedBox(height: 24),
+                      AuthTextButton(
+                        onButtonPress: () {
+                          Navigator.pop(context);
+                        },
+                        text: "Already Have an Account?",
+                      ),
+                    ],
                   ),
                 ),
               ),

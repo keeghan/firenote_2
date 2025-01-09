@@ -73,6 +73,21 @@ class AppAuthManager extends ChangeNotifier {
     }
   }
 
+  //Recover password
+  Future<String?> recoverPassword(String email) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _handleAuthError(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Sign out
   Future<void> signOut() async {
     try {
@@ -100,6 +115,8 @@ class AppAuthManager extends ChangeNotifier {
         return 'The password provided is too weak.';
       case 'operation-not-allowed':
         return 'Email/password accounts are not enabled.';
+      case 'network-request-failed':
+        return 'Network error occurred. Please check your internet connection and try again.';
       default:
         return 'An error occurred. Please try again.';
     }

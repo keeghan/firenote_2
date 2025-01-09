@@ -3,6 +3,8 @@ import 'package:firenote_2/auth_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../utils/utils.dart';
+
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
 
@@ -25,6 +27,8 @@ class _NotesScreenState extends State<NotesScreen> {
             Text("Welcome to notes"),
             ElevatedButton(
               onPressed: () async {
+                if (!mounted) return;
+                Utils.showSnackBar(context, 'logging out');
                 await _appAuthManager.signOut();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => AuthPage()),

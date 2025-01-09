@@ -1,4 +1,5 @@
 import 'package:firenote_2/ui/notes_screen.dart';
+import 'package:firenote_2/ui/password_recovery_screen.dart';
 import 'package:firenote_2/ui/sign_up_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
@@ -90,6 +91,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       const SizedBox(height: 24),
                       AuthTextButton(
                         onButtonPress: () {
+                          //reset error state
+                          _emailError = null;
+                          _passwordError = null;
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => SignUpScreen()),
@@ -101,9 +105,12 @@ class _SignInScreenState extends State<SignInScreen> {
                       // Password Recovery Button
                       AuthTextButton(
                         onButtonPress: () {
-                          // TODO: password recovery
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => PasswordRecoveryScreen()),
+                          );
                         },
-                        text: "Forgot Password",
+                        text: "Forgot Password?",
                       ),
                     ],
                   ),
@@ -160,7 +167,11 @@ class _SignInScreenState extends State<SignInScreen> {
           _emailController.text, _passwordController.text);
       if (!mounted) return;
       if (result == null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => NotesScreen()));
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => NotesScreen()),
+          (Route<dynamic> route) => false,
+        );
       } else {
         Utils.showSnackBar(context, result);
       }
