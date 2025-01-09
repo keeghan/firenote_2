@@ -5,13 +5,18 @@ class AuthPasswordField extends StatelessWidget {
   final String hintText;
   final bool obscureText;
   final VoidCallback onVissibilityToggle;
+  final String? errorText;
+  final void Function(String)? onChanged;
 
-  const AuthPasswordField(
-      {super.key,
-      required this.textEditingController,
-      required this.hintText,
-      required this.obscureText,
-      required this.onVissibilityToggle});
+  const AuthPasswordField({
+    super.key,
+    required this.textEditingController,
+    required this.hintText,
+    required this.obscureText,
+    required this.onVissibilityToggle,
+    this.errorText,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +24,11 @@ class AuthPasswordField extends StatelessWidget {
       controller: textEditingController,
       obscureText: obscureText,
       style: const TextStyle(color: Colors.white),
+      onChanged: onChanged,
       decoration: InputDecoration(
         hintText: hintText,
+        errorText: errorText,
+        errorStyle: const TextStyle(color: Colors.redAccent),
         hintStyle: const TextStyle(color: Colors.white70),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -29,6 +37,14 @@ class AuthPasswordField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.redAccent, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.redAccent, width: 2),
         ),
         suffixIcon: IconButton(
           icon: Icon(
