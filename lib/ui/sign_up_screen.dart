@@ -1,6 +1,5 @@
 import 'package:firenote_2/app_auth_manager.dart';
 import 'package:firenote_2/ui/notes_screen.dart';
-import 'package:firenote_2/ui/sign_in_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';

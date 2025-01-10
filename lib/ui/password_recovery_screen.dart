@@ -1,6 +1,3 @@
-import 'package:firenote_2/ui/sign_in_screen.dart';
-import 'package:firenote_2/ui/sign_up_screen.dart';
-import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
 import 'package:firenote_2/ui/widgets/auth_textfield.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
