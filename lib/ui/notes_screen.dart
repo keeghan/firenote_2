@@ -1,7 +1,13 @@
+import 'package:firenote_2/app_auth_manager.dart';
+import 'package:firenote_2/auth_page.dart';
+import 'package:firenote_2/notes_manager.dart';
+import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/note.dart';
 import 'widgets/note_card.dart';
 
 class NotesScreen extends StatefulWidget {
@@ -14,6 +20,7 @@ class NotesScreen extends StatefulWidget {
 class _NotesScreenState extends State<NotesScreen> {
   static const String _gridViewPrefKey = "isGridView";
   bool _isGridView = true;
+  late AppAuthManager authManager;
 
   @override
   void initState() {
@@ -32,6 +39,8 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    authManager = Provider.of<AppAuthManager>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -48,19 +57,60 @@ class _NotesScreenState extends State<NotesScreen> {
               color: Colors.white,
             ),
             onPressed: _toggleView,
+            tooltip: _isGridView ? 'Switch to list view' : 'Switch to grid view',
           ),
-          const CircleAvatar(
-            backgroundColor: Color(0xFF00B894),
-            child: Text('K', style: TextStyle(color: Colors.white)),
+          InkWell(
+            // Tap to logout
+            onTap: () => _showLogoutDialog(context, authManager),
+            child: CircleAvatar(
+              backgroundColor: const Color(0xFF00B894),
+              child: Text('K',
+                  style: const TextStyle(
+                      color: Colors.white)), //TODO: Consider using user's initial or image
+            ),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: NotesGrid(isGridView: _isGridView),
+      //User NotManager Consumer and StramBuilder to build notes
+      body: Consumer<NoteManager>(
+        builder: (context, noteManager, _) {
+          if (!noteManager.isInitialized) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return StreamBuilder<List<Note>>(
+            stream: noteManager.notesStream,
+            builder: (context, snapshot) {
+              //Handle error
+              if (snapshot.hasError) {
+                String errorMsg =
+                    'Error: ${snapshot.error is StateError ? 'Please check your connection' : 'Unable to load notes'}';
+                _buildErrorBox(context, noteManager, errorMsg);
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              return NotesGrid(
+                isGridView: _isGridView,
+                notesList: snapshot.data ?? [],
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFFB8C7FF),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.black),
-        onPressed: () {},
+        onPressed: () {
+          //TODO: Implement navigate to EditNoteScreen
+        },
       ),
     );
   }
@@ -71,6 +121,61 @@ class _NotesScreenState extends State<NotesScreen> {
     _isGridView = prefs.getBool(_gridViewPrefKey) ?? true;
     setState(() {});
   }
+}
+
+void _showLogoutDialog(BuildContext context, AppAuthManager authManager) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Logout Confirmation'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await authManager.signOut();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => AuthPage()),
+                (Route<dynamic> route) => false,
+              );
+            },
+            child: const Text('Logout'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Widget _buildErrorBox(context, NoteManager noteManager, String errorMsg) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          errorMsg,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        const SizedBox(height: 16),
+        AuthButton(
+          text: 'Retry',
+          onButtonPress: () async {
+            try {
+              await noteManager.refreshNotes();
+            } catch (e) {
+              if (context.mounted) {
+                Utils.showSnackBar(context, 'Error: ${e.toString()}');
+              }
+            }
+          },
+        ),
+      ],
+    ),
+  );
 }
 
 class SearchBar extends StatelessWidget {
@@ -99,19 +204,21 @@ class SearchBar extends StatelessWidget {
 
 class NotesGrid extends StatelessWidget {
   final bool isGridView;
+  final List<Note> notesList;
 
   const NotesGrid({
     super.key,
     required this.isGridView,
+    required this.notesList,
   });
 
   @override
   Widget build(BuildContext context) {
     Widget noteListBuilder(BuildContext context, int index) {
       return Padding(
-        padding: EdgeInsets.only(bottom: isGridView ? 0 : 16), // Conditional bottom padding
+        padding: EdgeInsets.only(bottom: isGridView ? 0 : 16),
         child: NoteCard(
-          note: sampelnotes[index],
+          note: notesList[index],
           onTap: () {
             //TODO: navigate to EditNotesScreen
           },
@@ -127,7 +234,7 @@ class NotesGrid extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: MasonryGridView.count(
           crossAxisCount: 2,
-          itemCount: sampelnotes.length,
+          itemCount: notesList.length,
           itemBuilder: noteListBuilder,
           mainAxisSpacing: 16.0,
           crossAxisSpacing: 16.0,
@@ -137,7 +244,7 @@ class NotesGrid extends StatelessWidget {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemBuilder: noteListBuilder,
-        itemCount: sampelnotes.length,
+        itemCount: notesList.length,
       );
     }
   }

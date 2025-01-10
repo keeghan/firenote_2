@@ -8,25 +8,45 @@ import 'package:intl/intl.dart';
 import 'data/note.dart';
 
 class NoteManager extends ChangeNotifier {
-  late FirebaseDatabase _database;
-  late FirebaseAuth _auth;
-  late DatabaseReference _noteRef;
+  FirebaseDatabase? _database;
+  FirebaseAuth? _auth;
+  DatabaseReference? _noteRef;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   NoteManager() {
     init();
   }
 
   Future<void> init() async {
+    if (_isLoading) return;
+
+    _isLoading = true;
+    notifyListeners();
     try {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       _database = FirebaseDatabase.instance;
       _auth = FirebaseAuth.instance;
-      final userId = _auth.currentUser?.uid;
-      if (userId != null) {
-        _database.ref(userId);
-      }
+      await _setupNoteRef();
+      _isInitialized = true;
     } catch (e) {
-      rethrow; 
+      print('Error initializing NoteManager: $e');
+      _isInitialized = false;
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _setupNoteRef() async {
+    final userId = _auth?.currentUser?.uid;
+    if (userId != null && _database != null) {
+      _noteRef = _database!.ref(userId);
+    } else {
+      _noteRef = null;
     }
   }
 
@@ -41,7 +61,7 @@ class NoteManager extends ChangeNotifier {
         'pinStatus': note.pinStatus,
         'title': note.title,
       };
-      await _noteRef.child(note.id).update(noteObject);
+      await _noteRef?.child(note.id).update(noteObject);
       return null;
     } catch (e) {
       return e.toString();
@@ -54,7 +74,7 @@ class NoteManager extends ChangeNotifier {
       final now = DateTime.now();
       note.dateTimeString = DateFormat('yyyy-MM-dd HH:mm:ss').format(now).toUpperCase();
       note.id = 'note_${DateFormat('yyyyMMddHHmmss').format(now)}';
-      await _noteRef.child(note.id).set(note.toMap());
+      await _noteRef?.child(note.id).set(note.toMap());
       return null;
     } catch (e) {
       return e.toString();
@@ -64,7 +84,7 @@ class NoteManager extends ChangeNotifier {
   // Undo delete note
   Future<String?> undoDeleteNote(Note note) async {
     try {
-      await _noteRef.child(note.id).set(note.toMap());
+      await _noteRef?.child(note.id).set(note.toMap());
       return null;
     } catch (e) {
       return e.toString();
@@ -74,7 +94,7 @@ class NoteManager extends ChangeNotifier {
   // Delete note
   Future<String?> deleteNote(Note note) async {
     try {
-      await _noteRef.child(note.id).remove();
+      await _noteRef?.child(note.id).remove();
       return null;
     } catch (e) {
       return e.toString();
@@ -83,11 +103,45 @@ class NoteManager extends ChangeNotifier {
 
   // Stream of notes (optional, for real-time updates)
   Stream<List<Note>> get notesStream {
-    return _noteRef.onValue.map((event) {
+    if (_noteRef == null) {
+      return Stream.error(
+          StateError('Notes reference not initialized. Please check authentication status.'));
+    }
+
+    return _noteRef!.onValue.map((event) {
       final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
       if (data == null) return [];
 
-      return data.values.map((value) => Note.fromMap(Map<String, dynamic>.from(value))).toList();
+      final notes = data.values
+          .map((value) => Note.fromMap(
+                Map<String, dynamic>.from(value),
+              ))
+          .toList();
+
+      notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
+
+      return notes;
     });
+  }
+
+  Future<void> refreshNotes() async {
+    if (_isLoading) return;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+      final userId = _auth?.currentUser?.uid;
+      if (userId != null) {
+        _noteRef = _database?.ref(userId);
+        // force a refresh of the data
+        await _noteRef?.get();
+      }
+    } catch (e) {
+      print('Error refreshing notes: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
