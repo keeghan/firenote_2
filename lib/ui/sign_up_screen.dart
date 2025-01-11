@@ -58,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                
+
                       // Email
                       const SizedBox(height: 32),
                       AuthTextField(
@@ -67,7 +67,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         errorText: _emailError,
                         onChanged: validateEmail,
                       ),
-                
+
                       // Password
                       const SizedBox(height: 16),
                       AuthPasswordField(
@@ -80,7 +80,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() => _obscureText = !_obscureText);
                         },
                       ),
-                
+
                       // Password Confirmation
                       const SizedBox(height: 16),
                       AuthPasswordField(
@@ -93,13 +93,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() => _obscureConfirmationText = !_obscureConfirmationText);
                         },
                       ),
-                
+
                       const SizedBox(height: 24),
                       AuthButton(
                         text: 'SIGN UP',
-                        onButtonPress: _handleSignUp, // Disable if needed
+                        onButtonPress: _handleSignUp,
+                        isStretched: true,
                       ),
-                
+
                       // Sign In Button
                       const SizedBox(height: 24),
                       AuthTextButton(

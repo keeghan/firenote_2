@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firenote_2/firebase_options.dart';
+import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -51,11 +52,13 @@ class NoteManager extends ChangeNotifier {
   }
 
   // Update existing note or just its color
-  Future<String?> updateNote(Note note, {String color = ''}) async {
+  Future<String?> updateNote(Note note) async {
+    print('====Updaated======${note.id}======');
+
     try {
       final noteObject = {
-        'color': color.isEmpty ? note.color : color,
-        'dateTimeString': note.dateTimeString.toUpperCase(),
+        'color': note.color,
+        'dateTimeString': getFormattedDateTime(),
         'id': note.id,
         'message': note.message,
         'pinStatus': note.pinStatus,
@@ -70,15 +73,16 @@ class NoteManager extends ChangeNotifier {
 
   // Save new note
   Future<String?> saveNote(Note note) async {
-    try {
-      final now = DateTime.now();
-      note.dateTimeString = DateFormat('yyyy-MM-dd HH:mm:ss').format(now).toUpperCase();
-      note.id = 'note_${DateFormat('yyyyMMddHHmmss').format(now)}';
-      await _noteRef?.child(note.id).set(note.toMap());
-      return null;
-    } catch (e) {
-      return e.toString();
-    }
+    if (note.color == "#000000") note.color = '#00FFFFFF';
+      try {
+        note.dateTimeString = getFormattedDateTime();
+        note.id = 'note_${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
+        print('==========${note.id}======');
+        await _noteRef?.child(note.id).set(note.toMap());
+        return null;
+      } catch (e) {
+        return e.toString();
+      }
   }
 
   // Undo delete note

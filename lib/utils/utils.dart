@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 import '../data/note.dart';
 
@@ -35,29 +37,6 @@ class ValidationUtils {
   }
 }
 
-// Color getNoteColor(String colorString) {
-//   switch (colorString) {
-//     case NoteColors.red:
-//       return Colors.red;
-//     case NoteColors.COLOR_BLUE:
-//       return Colors.blue;
-//     case NoteColors.COLOR_ORANGE:
-//       return Colors.orange;
-//     case NoteColors.COLOR_VIOLET:
-//       return Colors.purple;
-//     case NoteColors.COLOR_GREEN:
-//       return Colors.green;
-//     case NoteColors.COLOR_BROWN:
-//       return Colors.brown;
-//     case NoteColors.COLOR_DARK_GREY:
-//       return Colors.grey.shade800;
-//     case NoteColors.COLOR_TRANSPARENT:
-//       return Colors.transparent;
-//     default:
-//       return Colors.black;
-//   }
-// }
-
 class NoteColors {
   static const String red = "#880000";
   static const String blue = "#FF01579B";
@@ -67,19 +46,70 @@ class NoteColors {
   static const String brown = "#310c0c";
   static const String darkGrey = "#4c4c4c";
   static const String transparent = "#00FFFFFF";
+}
 
-  // Method to convert hex color string to Color object
-  static Color hexToColor(String hex) {
-    hex = hex.replaceAll('#', '');
-    if (hex.length == 6) {
-      hex = 'FF$hex';
-    }
-    return Color(int.parse('0x$hex'));
+//Change noteColor to flutter Color Object
+//ensures interability with exisiting database
+Color hexToColor(String hex) {
+  hex = hex.replaceAll('#', '');
+  if (hex.length == 6) {
+    hex = 'FF$hex';
+  }
+  return Color(int.parse('0x$hex'));
+}
+
+String colorToHex(Color color) {
+  // ignore: deprecated_member_use
+  String hex = color.value.toRadixString(16).toUpperCase();
+  hex = hex.padLeft(8, '0');
+  if (hex.startsWith('FF')) return '#${hex.substring(2)}';
+  return '#$hex';
+}
+
+//Format DateTime String to match native(Firenote App)
+String getFormattedDateTime() {
+  tz.initializeTimeZones();
+  final DateTime now = DateTime.now();
+  final location = tz.local;
+  // final tzDateTime = tz.TZDateTime.from(now, location);
+  final tzAbbr = location.currentTimeZone.abbreviation;
+
+  final String formatted = DateFormat("yyyy-MM-dd HH:mm:ss SSSS").format(now);
+  return "$formatted $tzAbbr".toUpperCase();
+}
+
+DateTime parseFormattedDateTime(String dateTimeStr) {
+  try {
+    // Remove timezone abbreviation and trim any whitespace
+    final dateTimePart = dateTimeStr.split(' ').sublist(0, 4).join(' ').trim();
+    // Create formatter matching the input format
+    final formatter = DateFormat('yyyy-MM-dd HH:mm:ss SSSS');
+    // Parse the datetime string
+    final dateTime = formatter.parse(dateTimePart);
+
+    return dateTime;
+  } catch (e) {
+    throw FormatException(
+        'Invalid datetime format. Expected format: "yyyy-MM-dd HH:mm:ss SSSS TZ"');
   }
 }
 
-const String noteIdPattern = "yyyyMMddHHmmssSS";
-const String noteTimePatter = "yyyy-MM-dd HH:mm:ss SSSS z";
+String formatLastEdited(DateTime dateTime) {
+  final now = DateTime.now();
+  final duration = now.difference(dateTime).abs();
+
+  if (duration.inDays >= 365) {
+    return DateFormat('dd MMM yyyy').format(dateTime); // Use DateFormat
+  } else if (duration.inDays >= 30) {
+    return DateFormat('dd MMM').format(dateTime); // Use DateFormat
+  } else if (duration.inDays >= 1) {
+    return '${duration.inDays}d';
+  } else if (duration.inHours >= 1) {
+    return '${duration.inHours}h';
+  } else {
+    return '${duration.inMinutes}m';
+  }
+}
 
 //Sample notes
 List<Note> sampelnotes = [

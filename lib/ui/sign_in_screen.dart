@@ -85,6 +85,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       AuthButton(
                         text: 'SIGN IN',
                         onButtonPress: _handleSignIn,
+                        isStretched: true,
                       ),
 
                       // SignUp Button

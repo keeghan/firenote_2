@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/note.dart';
 
+//A card represent a single Note
 class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback onTap;
@@ -12,7 +13,7 @@ class NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color cardColor = NoteColors.hexToColor(note.color);
+    Color cardColor = hexToColor(note.color);
     bool isTransparent = note.color == NoteColors.transparent;
 
     return GestureDetector(
@@ -33,12 +34,13 @@ class NoteCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
+                overflow: TextOverflow.ellipsis,
                 maxLines: 6,
                 note.message,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],

@@ -71,6 +71,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                   AuthButton(
                     text: 'SEND RECOVERY EMAIL',
                     onButtonPress: _handleSendRecoveryEmail,
+                    isStretched: true,
                   ),
                 ],
               ),

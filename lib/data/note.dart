@@ -38,4 +38,16 @@ class Note {
       dateTimeString: map['dateTimeString'] ?? '',
     );
   }
+
+  // Copy function to create a new instance with the same values
+  Note copy() {
+    return Note(
+      id: id,
+      title: title,
+      message: message,
+      color: color,
+      pinStatus: pinStatus,
+      dateTimeString: dateTimeString,
+    );
+  }
 }

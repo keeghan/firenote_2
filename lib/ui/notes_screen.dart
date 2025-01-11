@@ -1,14 +1,14 @@
 import 'package:firenote_2/app_auth_manager.dart';
 import 'package:firenote_2/auth_page.dart';
 import 'package:firenote_2/notes_manager.dart';
+import 'package:firenote_2/ui/edit_note_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/note.dart';
-import 'widgets/note_card.dart';
+import 'widgets/note_grid.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
@@ -20,7 +20,6 @@ class NotesScreen extends StatefulWidget {
 class _NotesScreenState extends State<NotesScreen> {
   static const String _gridViewPrefKey = "isGridView";
   bool _isGridView = true;
-  late AppAuthManager authManager;
 
   @override
   void initState() {
@@ -39,8 +38,6 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    authManager = Provider.of<AppAuthManager>(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -59,16 +56,22 @@ class _NotesScreenState extends State<NotesScreen> {
             onPressed: _toggleView,
             tooltip: _isGridView ? 'Switch to list view' : 'Switch to grid view',
           ),
-          InkWell(
-            // Tap to logout
-            onTap: () => _showLogoutDialog(context, authManager),
-            child: CircleAvatar(
-              backgroundColor: const Color(0xFF00B894),
-              child: Text('K',
-                  style: const TextStyle(
-                      color: Colors.white)), //TODO: Consider using user's initial or image
-            ),
-          ),
+          //Show User Icon
+          Consumer<AppAuthManager>(builder: (context, authManager, _) {
+            if (authManager.loggedIn) {
+              return InkWell(
+                // Tap to logout
+                onTap: () => _showLogoutDialog(context, authManager),
+                child: CircleAvatar(
+                    backgroundColor: const Color(0xFF00B894),
+                    child: Text(authManager.userChar, style: const TextStyle(color: Colors.white))),
+              );
+            } else {
+              return SizedBox(
+                width: 2,
+              );
+            }
+          }),
           const SizedBox(width: 8),
         ],
       ),
@@ -76,9 +79,7 @@ class _NotesScreenState extends State<NotesScreen> {
       body: Consumer<NoteManager>(
         builder: (context, noteManager, _) {
           if (!noteManager.isInitialized) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return _buildErrorBox(context, noteManager, "check Internet and Try again");
           }
 
           return StreamBuilder<List<Note>>(
@@ -92,9 +93,15 @@ class _NotesScreenState extends State<NotesScreen> {
               }
 
               if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.data != null && snapshot.data!.isEmpty) {
+                return const Center(child: Text('Add notes'));
+              }
+
+              if (snapshot.data == null) {
+                return _buildErrorBox(context, noteManager, "An unexpected Error Occured");
               }
 
               return NotesGrid(
@@ -107,10 +114,14 @@ class _NotesScreenState extends State<NotesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.add, color: Colors.black),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
         onPressed: () {
-          //TODO: Implement navigate to EditNoteScreen
+          //Create new Note
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => EditNoteScreen(note: null)),
+          );
         },
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -172,6 +183,7 @@ Widget _buildErrorBox(context, NoteManager noteManager, String errorMsg) {
               }
             }
           },
+          isStretched: false,
         ),
       ],
     ),
@@ -199,53 +211,5 @@ class SearchBar extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class NotesGrid extends StatelessWidget {
-  final bool isGridView;
-  final List<Note> notesList;
-
-  const NotesGrid({
-    super.key,
-    required this.isGridView,
-    required this.notesList,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget noteListBuilder(BuildContext context, int index) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: isGridView ? 0 : 16),
-        child: NoteCard(
-          note: notesList[index],
-          onTap: () {
-            //TODO: navigate to EditNotesScreen
-          },
-          onLongPress: () {
-            //TODO: bring up quick action menu
-          },
-        ),
-      );
-    }
-
-    if (isGridView) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: MasonryGridView.count(
-          crossAxisCount: 2,
-          itemCount: notesList.length,
-          itemBuilder: noteListBuilder,
-          mainAxisSpacing: 16.0,
-          crossAxisSpacing: 16.0,
-        ),
-      );
-    } else {
-      return ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemBuilder: noteListBuilder,
-        itemCount: notesList.length,
-      );
-    }
   }
 }

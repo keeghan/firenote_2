@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 class AuthButton extends StatelessWidget {
   final String text;
   final VoidCallback onButtonPress;
+  final bool isStretched; 
 
-  const AuthButton({super.key, required this.text, required this.onButtonPress});
+  const AuthButton({super.key, required this.text, required this.onButtonPress, required this.isStretched});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,
+      width: isStretched ? double.infinity : null,
       height: 50,
       child: ElevatedButton(
         onPressed: onButtonPress,

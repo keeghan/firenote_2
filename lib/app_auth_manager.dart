@@ -11,6 +11,8 @@ class AppAuthManager extends ChangeNotifier {
   // Add loading state
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  String _userChar = '';
+  String get userChar => _userChar;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -24,6 +26,7 @@ class AppAuthManager extends ChangeNotifier {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       final currentUser = _auth.currentUser;
       _loggedIn = currentUser != null;
+      if (_loggedIn) _userChar = currentUser!.email![0].toUpperCase();
       notifyListeners();
 
       _auth.userChanges().listen((user) {
