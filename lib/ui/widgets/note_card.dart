@@ -8,14 +8,26 @@ class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final bool isSelected;
 
-  const NoteCard({super.key, required this.note, required this.onTap, required this.onLongPress});
+  const NoteCard(
+      {super.key,
+      required this.note,
+      required this.onTap,
+      required this.onLongPress,
+      required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
     Color cardColor = hexToColor(note.color);
     bool isTransparent = note.color == NoteColors.transparent;
-
+    Color borderColor;
+    //blue border when selected otherwise grey or note's color
+    borderColor = isSelected
+        ? Colors.blueAccent
+        : isTransparent
+            ? Colors.grey
+            : cardColor;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -24,8 +36,8 @@ class NoteCard extends StatelessWidget {
           color: cardColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isTransparent ? Colors.grey : cardColor,
-            width: 0.5,
+            color: borderColor,
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Padding(

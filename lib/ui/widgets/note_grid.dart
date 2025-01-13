@@ -9,6 +9,7 @@ class NotesGrid extends StatelessWidget {
   final List<Note> notesList;
   final void Function(Note note) onTap;
   final void Function(Note note) onLongPress;
+  final Set<String> selectedNotes;
 
   const NotesGrid({
     super.key,
@@ -16,6 +17,7 @@ class NotesGrid extends StatelessWidget {
     required this.notesList,
     required this.onTap,
     required this.onLongPress,
+    required this.selectedNotes,
   });
 
   @override
@@ -28,7 +30,11 @@ class NotesGrid extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500).copyWith(color: Colors.grey),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w500)
+              .copyWith(color: Colors.grey),
         ),
       );
     }
@@ -41,6 +47,7 @@ class NotesGrid extends StatelessWidget {
           //Pass Note to be edited
           onTap: () => onTap(note),
           onLongPress: () => onLongPress(note),
+          isSelected: selectedNotes.contains(note.id),
         ),
       );
     }
