@@ -49,13 +49,24 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   @override
   Widget build(BuildContext context) {
     //Save or Edit note when user goes back
+    //ask confirmation if save or edit fail
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
-        // final error = await _saveNote(context);
-        // if (error != null && mounted) {
-        //   Navigator.of(context).pop(false);
-        // }
+        if (didPop) {
+          return;
+        }
+        if (context.mounted) {
+          bool success = await _saveNote(context);
+          if (success) {
+            Navigator.pop(context);
+          } else {
+            bool userExit = await _showFailedSaveDialog(context);
+            if (userExit) {
+              Navigator.pop(context);
+            }
+          }
+        }
       },
       child: Scaffold(
         backgroundColor: _noteColor,
@@ -64,13 +75,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           leading: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async {
+                // handle save/edit or exit
                 bool success = await _saveNote(context);
                 if (success) {
-                  () => Navigator.pop(context);
+                  Navigator.pop(context);
                 } else {
-                  if (!mounted) {
-                    bool exit = await _showFailedSaveDialog(context);
-                    if (exit) Navigator.pop(context);
+                  bool userExit = await _showFailedSaveDialog(context);
+                  if (userExit) {
+                    Navigator.pop(context);
                   }
                 }
               }),
@@ -255,4 +267,18 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       },
     ).then((value) => value ?? false);
   }
+
+  // void _handleExit(BuildContext context) async {
+  //   if (mounted) {
+  //     bool success = await _saveNote(context);
+  //     if (success) {
+  //       Navigator.pop(context);
+  //     } else {
+  //       if (!mounted) {
+  //         bool exit = await _showFailedSaveDialog(context);
+  //         if (exit) Navigator.pop(context);
+  //       }
+  //     }
+  //   }
+  // }
 }
