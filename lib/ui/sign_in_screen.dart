@@ -44,80 +44,83 @@ class _SignInScreenState extends State<SignInScreen> {
           return Stack(
             children: [
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Sign into account',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w500,
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Sign into account',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
 
-                      // Email
-                      const SizedBox(height: 32),
-                      AuthTextField(
-                        textEditingController: _emailController,
-                        hintText: "Email",
-                        onChanged: (value) => validateEmail(value),
-                        errorText: _emailError,
-                      ),
+                        // Email
+                        const SizedBox(height: 32),
+                        AuthTextField(
+                          textEditingController: _emailController,
+                          hintText: "Email",
+                          onChanged: (value) => validateEmail(value),
+                          errorText: _emailError,
+                        ),
 
-                      // Password
-                      const SizedBox(height: 16),
-                      AuthPasswordField(
-                        textEditingController: _passwordController,
-                        hintText: 'Enter password',
-                        obscureText: _obscureText,
-                        onChanged: (value) => validatePassword(value),
-                        errorText: _passwordError,
-                        onVissibilityToggle: () {
-                          setState(() => _obscureText = !_obscureText);
-                        },
-                      ),
+                        // Password
+                        const SizedBox(height: 16),
+                        AuthPasswordField(
+                          textEditingController: _passwordController,
+                          hintText: 'Enter password',
+                          obscureText: _obscureText,
+                          onChanged: (value) => validatePassword(value),
+                          errorText: _passwordError,
+                          onVissibilityToggle: () {
+                            setState(() => _obscureText = !_obscureText);
+                          },
+                        ),
 
-                      // SignIn Button
-                      const SizedBox(height: 24),
-                      AuthButton(
-                        text: 'SIGN IN',
-                        onButtonPress: _handleSignIn,
-                        isStretched: true,
-                      ),
+                        // SignIn Button
+                        const SizedBox(height: 24),
+                        AuthButton(
+                          text: 'SIGN IN',
+                          onButtonPress: _handleSignIn,
+                          isStretched: true,
+                        ),
 
-                      // SignUp Button
-                      const SizedBox(height: 24),
-                      AuthTextButton(
-                        onButtonPress: () {
-                          //reset error state
-                          _emailError = null;
-                          _passwordError = null;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => SignUpScreen()),
-                          );
-                        },
-                        text: "Don't have an Account?",
-                      ),
+                        // SignUp Button
+                        const SizedBox(height: 24),
+                        AuthTextButton(
+                          onButtonPress: () {
+                            //reset error state
+                            _emailError = null;
+                            _passwordError = null;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => SignUpScreen()),
+                            );
+                          },
+                          text: "Don't have an Account?",
+                        ),
 
-                      // Password Recovery Button
-                      AuthTextButton(
-                        onButtonPress: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => PasswordRecoveryScreen()),
-                          );
-                        },
-                        text: "Forgot Password?",
-                      ),
-                    ],
+                        // Password Recovery Button
+                        AuthTextButton(
+                          onButtonPress: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PasswordRecoveryScreen()),
+                            );
+                          },
+                          text: "Forgot Password?",
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              //Cover screen with circularLoading icon
+
+              // Cover screen with circularLoading icon
               if (authState.isLoading)
                 Positioned(
                   child: Container(

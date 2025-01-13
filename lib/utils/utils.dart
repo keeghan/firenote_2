@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -110,6 +111,19 @@ String formatLastEdited(DateTime dateTime) {
     return '${duration.inMinutes}m';
   }
 }
+
+
+
+void showPersistentToast(String msg) {
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.grey,
+      fontSize: 16.0
+    );
+  }
 
 //Sample notes
 List<Note> sampelnotes = [

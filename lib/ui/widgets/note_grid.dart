@@ -1,5 +1,4 @@
 import 'package:firenote_2/data/note.dart';
-import 'package:firenote_2/ui/edit_note_screen.dart';
 import 'package:firenote_2/ui/widgets/note_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -8,31 +7,40 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 class NotesGrid extends StatelessWidget {
   final bool isGridView;
   final List<Note> notesList;
+  final void Function(Note note) onTap;
+  final void Function(Note note) onLongPress;
 
   const NotesGrid({
     super.key,
     required this.isGridView,
     required this.notesList,
+    required this.onTap,
+    required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget noteListBuilder(BuildContext context, int index) {
+    List<Note> pinned = notesList.where((note) => note.pinStatus).toList();
+    List<Note> unPinned = notesList.where((note) => !note.pinStatus).toList();
+
+    Widget sectionHeader(String title) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500).copyWith(color: Colors.grey),
+        ),
+      );
+    }
+
+    Widget noteListBuilder(Note note) {
       return Padding(
         padding: EdgeInsets.only(bottom: isGridView ? 0 : 16),
         child: NoteCard(
-          note: notesList[index],
-          onTap: () {
-            //Pass Note to be edited
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => EditNoteScreen(note: notesList[index]),
-              ),
-            );
-          },
-          onLongPress: () {
-            //TODO: bring up quick action menu
-          },
+          note: note,
+          //Pass Note to be edited
+          onTap: () => onTap(note),
+          onLongPress: () => onLongPress(note),
         ),
       );
     }
@@ -40,19 +48,44 @@ class NotesGrid extends StatelessWidget {
     if (isGridView) {
       return Padding(
         padding: const EdgeInsets.all(16),
-        child: MasonryGridView.count(
-          crossAxisCount: 2,
-          itemCount: notesList.length,
-          itemBuilder: noteListBuilder,
-          mainAxisSpacing: 16.0,
-          crossAxisSpacing: 16.0,
+        child: CustomScrollView(
+          slivers: [
+            if (pinned.isNotEmpty) ...[
+              SliverToBoxAdapter(child: sectionHeader('pinned')),
+              SliverMasonryGrid.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                itemBuilder: (context, index) => noteListBuilder(pinned[index]),
+                childCount: pinned.length,
+              ),
+            ],
+            if (unPinned.isNotEmpty) ...[
+              SliverToBoxAdapter(child: sectionHeader('others')),
+              SliverMasonryGrid.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                itemBuilder: (context, index) => noteListBuilder(unPinned[index]),
+                childCount: unPinned.length,
+              ),
+            ]
+          ],
         ),
       );
     } else {
-      return ListView.builder(
+      return ListView(
         padding: const EdgeInsets.all(16),
-        itemBuilder: noteListBuilder,
-        itemCount: notesList.length,
+        children: [
+          if (pinned.isNotEmpty) ...[
+            sectionHeader('Pinned'),
+            ...pinned.map((note) => noteListBuilder(note)),
+          ],
+          if (unPinned.isNotEmpty) ...[
+            sectionHeader('Others'),
+            ...unPinned.map((note) => noteListBuilder(note)),
+          ],
+        ],
       );
     }
   }

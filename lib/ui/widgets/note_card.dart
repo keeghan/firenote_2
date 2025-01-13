@@ -22,10 +22,10 @@ class NoteCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isTransparent ? Colors.grey : cardColor,
-            width: 1,
+            width: 0.5,
           ),
         ),
         child: Padding(
@@ -37,11 +37,6 @@ class NoteCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 maxLines: 6,
                 note.message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
               ),
             ],
           ),

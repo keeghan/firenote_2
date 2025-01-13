@@ -39,7 +39,7 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+   //   backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E1E1E),
         leading: IconButton(
@@ -96,17 +96,25 @@ class _NotesScreenState extends State<NotesScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (snapshot.data != null && snapshot.data!.isEmpty) {
-                return const Center(child: Text('Add notes'));
-              }
-
               if (snapshot.data == null) {
                 return _buildErrorBox(context, noteManager, "An unexpected Error Occured");
+              }
+
+              if (snapshot.data != null && snapshot.data!.isEmpty) {
+                return const Center(child: Text('Add notes'));
               }
 
               return NotesGrid(
                 isGridView: _isGridView,
                 notesList: snapshot.data ?? [],
+                onTap: (note) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => EditNoteScreen(note: note)),
+                  );
+                },
+                onLongPress: (note) {
+                  //TODO: bring up quick action menu
+                },
               );
             },
           );

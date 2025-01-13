@@ -24,7 +24,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   final _contentController = TextEditingController();
   Note? _initialNote;
 
-
   @override
   void initState() {
     super.initState();
@@ -51,21 +50,30 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   Widget build(BuildContext context) {
     //Save or Edit note when user goes back
     return PopScope(
-      canPop: true,
+      canPop: false,
       onPopInvoked: (didPop) async {
-        final error = await _saveNote(context);
-        if (error != null && mounted) {
-          Navigator.of(context).pop(false);
-        }
+        // final error = await _saveNote(context);
+        // if (error != null && mounted) {
+        //   Navigator.of(context).pop(false);
+        // }
       },
       child: Scaffold(
         backgroundColor: _noteColor,
         appBar: AppBar(
           backgroundColor: _noteColor,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
+              icon: Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () async {
+                bool success = await _saveNote(context);
+                if (success) {
+                  () => Navigator.pop(context);
+                } else {
+                  if (!mounted) {
+                    bool exit = await _showFailedSaveDialog(context);
+                    if (exit) Navigator.pop(context);
+                  }
+                }
+              }),
           actions: [
             IconButton(
               onPressed: () => setState(() => _pinStatus = !_pinStatus),
@@ -182,7 +190,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   }
 
   //save Note
-  Future<String?> _saveNote(BuildContext context) async {
+  Future<bool> _saveNote(BuildContext context) async {
     // Update note data from controllers
     note.title = _titleController.text;
     note.message = _contentController.text;
@@ -190,34 +198,61 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     note.pinStatus = _pinStatus;
     //skip if messsaage is empty
     if (note.message.isEmpty) {
-      return null;
+      return true;
     }
     //skip if not changes were made
     if (_isEdit && !_isNoteChanged()) {
-      return null;
+      return true;
     }
     //save or update
     final noteManager = context.read<NoteManager>();
     String? error;
+    String success = "";
     if (_isEdit) {
       error = await noteManager.updateNote(note);
+      success = "note updated";
     } else {
       error = await noteManager.saveNote(note);
+      success = "note saved";
     }
-
-    if (error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving note: $error')),
-      );
-    }
-
-    return error;
+    error != null ? showPersistentToast('error: $error') : showPersistentToast(success);
+    return error == null;
   }
 
+  //Determine if note has changed since this screen was open
   bool _isNoteChanged() {
     return _initialNote!.title != _titleController.text ||
         _initialNote!.message != _contentController.text ||
         _initialNote!.color != colorToHex(_noteColor) ||
         _initialNote!.pinStatus != _pinStatus;
+  }
+
+  Future<bool> _showFailedSaveDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(''),
+          content: SingleChildScrollView(
+            child: Text(_isEdit ? "edit failed" : 'save failed'),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('exit anyway'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    ).then((value) => value ?? false);
   }
 }

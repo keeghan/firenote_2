@@ -38,78 +38,79 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     _appAuthManager = Provider.of<AppAuthManager>(context);
-
     return Scaffold(
       body: Consumer<AppAuthManager>(
         builder: (context, authState, _) {
           return Stack(
             children: [
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Create An Account',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w500,
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Create An Account',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
 
-                      // Email
-                      const SizedBox(height: 32),
-                      AuthTextField(
-                        textEditingController: _emailController,
-                        hintText: "Email",
-                        errorText: _emailError,
-                        onChanged: validateEmail,
-                      ),
+                        // Email
+                        const SizedBox(height: 32),
+                        AuthTextField(
+                          textEditingController: _emailController,
+                          hintText: "Email",
+                          errorText: _emailError,
+                          onChanged: validateEmail,
+                        ),
 
-                      // Password
-                      const SizedBox(height: 16),
-                      AuthPasswordField(
-                        textEditingController: _passwordController,
-                        hintText: 'Enter password',
-                        obscureText: _obscureText,
-                        errorText: _passwordError,
-                        onChanged: validatePassword,
-                        onVissibilityToggle: () {
-                          setState(() => _obscureText = !_obscureText);
-                        },
-                      ),
+                        // Password
+                        const SizedBox(height: 16),
+                        AuthPasswordField(
+                          textEditingController: _passwordController,
+                          hintText: 'Enter password',
+                          obscureText: _obscureText,
+                          errorText: _passwordError,
+                          onChanged: validatePassword,
+                          onVissibilityToggle: () {
+                            setState(() => _obscureText = !_obscureText);
+                          },
+                        ),
 
-                      // Password Confirmation
-                      const SizedBox(height: 16),
-                      AuthPasswordField(
-                        textEditingController: _confirmationController,
-                        hintText: 'Confirm password',
-                        obscureText: _obscureConfirmationText,
-                        errorText: _confirmationError,
-                        onChanged: validateConfirmation,
-                        onVissibilityToggle: () {
-                          setState(() => _obscureConfirmationText = !_obscureConfirmationText);
-                        },
-                      ),
+                        // Password Confirmation
+                        const SizedBox(height: 16),
+                        AuthPasswordField(
+                          textEditingController: _confirmationController,
+                          hintText: 'Confirm password',
+                          obscureText: _obscureConfirmationText,
+                          errorText: _confirmationError,
+                          onChanged: validateConfirmation,
+                          onVissibilityToggle: () {
+                            setState(() => _obscureConfirmationText = !_obscureConfirmationText);
+                          },
+                        ),
 
-                      const SizedBox(height: 24),
-                      AuthButton(
-                        text: 'SIGN UP',
-                        onButtonPress: _handleSignUp,
-                        isStretched: true,
-                      ),
+                        const SizedBox(height: 24),
+                        AuthButton(
+                          text: 'SIGN UP',
+                          onButtonPress: _handleSignUp,
+                          isStretched: true,
+                        ),
 
-                      // Sign In Button
-                      const SizedBox(height: 24),
-                      AuthTextButton(
-                        onButtonPress: () {
-                          Navigator.pop(context);
-                        },
-                        text: "Already Have an Account?",
-                      ),
-                    ],
+                        // Sign In Button
+                        const SizedBox(height: 24),
+                        AuthTextButton(
+                          onButtonPress: () {
+                            Navigator.pop(context);
+                          },
+                          text: "Already Have an Account?",
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
