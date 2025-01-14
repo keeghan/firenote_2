@@ -3,15 +3,16 @@ import 'package:firenote_2/utils/fire_note_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+
 PreferredSizeWidget buildSelectionBar(
-  BuildContext context,
-  final VoidCallback? onColorTap,
-  final VoidCallback? onDeleteTap,
-  final VoidCallback? onPinTap,
-  final VoidCallback? onDuplicateTap,
-  final VoidCallback? onCancelTap,
-  final int selectedCount,
-) {
+    BuildContext context,
+    final VoidCallback? onColorTap,
+    final VoidCallback? onDeleteTap,
+    final VoidCallback? onPinTap,
+    final VoidCallback? onDuplicateTap,
+    final VoidCallback? onCancelTap,
+    final int selectedCount,
+    ) {
   return AppBar(
     key: const ValueKey('selectionBar'),
     backgroundColor: appBarColor,
@@ -21,7 +22,7 @@ PreferredSizeWidget buildSelectionBar(
         children: [
           IconButton(
             onPressed: onCancelTap,
-            icon: const Icon(Icons.cancel, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.white),
           ),
           Text(
             '$selectedCount',

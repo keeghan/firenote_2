@@ -21,7 +21,7 @@ class NotesScreen extends StatefulWidget {
 class _NotesScreenState extends State<NotesScreen> {
   bool _isGridView = true; //track note orientation
   bool _isSelection = false;
-  final Set<String> _selectedNotes = {};
+  final Set<Note> _selectedNotes = {};
 
   @override
   void initState() {
@@ -40,61 +40,23 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //   backgroundColor: const Color(0xFF121212),
-      appBar:
-          //  AppBar(
-          //   backgroundColor: const Color(0xFF1E1E1E),
-          //   leading: IconButton(
-          //     icon: const Icon(Icons.menu, color: Colors.white),
-          //     onPressed: () {},
-          //   ),
-          //   title: const SearchBar(),
-          //   actions: [
-          //     IconButton(
-          //       icon: Icon(
-          //         _isGridView ? Icons.view_agenda : Icons.grid_view,
-          //         color: Colors.white,
-          //       ),
-          //       onPressed: _toggleView,
-          //       tooltip: _isGridView ? 'Switch to list view' : 'Switch to grid view',
-          //     ),
-          //     //Show User Icon
-          //     Consumer<AppAuthManager>(builder: (context, authManager, _) {
-          //       if (authManager.loggedIn) {
-          //         return InkWell(
-          //           // Tap to logout
-          //           onTap: () => _showLogoutDialog(context, authManager),
-          //           child: CircleAvatar(
-          //               backgroundColor: const Color(0xFF00B894),
-          //               child: Text(authManager.userChar, style: const TextStyle(color: Colors.white))),
-          //         );
-          //       } else {
-          //         return SizedBox(
-          //           width: 2,
-          //         );
-          //       }
-          //     }),
-          //     const SizedBox(width: 8),
-          //   ],
-          // ),
-
-          //Change appbar depending on whether a note is selected or note
-          !_isSelection
-              ? buildDefaultNoteBar(
-                  _isGridView,
-                  () => _toggleGridView(),
-                  () => _showLogoutDialog(context),
-                )
-              : buildSelectionBar(
-                  context,
-                  () => onColorTap(),
-                  () => onDeleteTap(),
-                  () => onPinTap(),
-                  () => onDuplicateTap(),
-                  () => cleanUpAfterAction(),
-                  _selectedNotes.length,
-                ),
-      //User NotManager Consumer and StramBuilder to build notes
+      //Change appbar depending on whether a note is selected or note
+      appBar: !_isSelection
+          ? buildDefaultNoteBar(
+              _isGridView,
+              () => _toggleGridView(),
+              () => _showLogoutDialog(context),
+            )
+          : buildSelectionBar(
+              context,
+              () => onColorTap(),
+              () => onDeleteTap(),
+              () => onPinTap(),
+              () => onDuplicateTap(),
+              () => afterActionDone("cancelled"),
+              _selectedNotes.length,
+            ),
+      //User NoteManager Consumer and StramBuilder to build notes
       body: Consumer<NoteManager>(
         builder: (context, noteManager, _) {
           if (!noteManager.isInitialized) {
@@ -142,14 +104,14 @@ class _NotesScreenState extends State<NotesScreen> {
                     } else {
                       //in selection mode
                       setState(() {
-                        if (_selectedNotes.contains(note.id)) {
+                        if (_selectedNotes.contains(note)) {  //TODO: note comparisons
                           //unSelect
-                          _selectedNotes.remove(note.id);
+                          _selectedNotes.remove(note);
                           if (_selectedNotes.isEmpty) {
                             _isSelection = false;
                           }
                         } else {
-                          _selectedNotes.add(note.id);
+                          _selectedNotes.add(note);
                           if (_selectedNotes.length == 1) {
                             throw "Selection Error: less than 2"; //dhecks
                           }
@@ -162,11 +124,12 @@ class _NotesScreenState extends State<NotesScreen> {
                     //first selected
                     setState(() {
                       _isSelection = true;
-                      _selectedNotes.add(note.id);
+                      _selectedNotes.add(note);
                       if (_selectedNotes.length > 1) throw "Selection Error: not first selection";
                     });
                   },
-                  selectedNotes: _selectedNotes,
+                  //Set of Objects not working for noteObject highlight
+                  selectedNotes: _selectedNotes.map((note) => note.id).toSet(),
                 ),
               );
             },
@@ -187,30 +150,43 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  //implement selection bar functions functions
-  void onColorTap() {
-    cleanUpAfterAction();
+//=======================================================================
+
+  // implement selection bar functions functions
+  Future<void> onColorTap() async {
+    //call
+    // String? error = await Provider.of<NoteManager>(context, listen: false)
+    //     .changeNotesColor(_selectedNotes.map((note) => note.id).toSet(), "colorhere");
+    // afterActionDone(error);
   }
 
-  void onDeleteTap() {
-    cleanUpAfterAction();
+  void onDeleteTap() async {
+    String? error = await Provider.of<NoteManager>(context, listen: false).deleteNotes(
+      _selectedNotes,
+    );
+    afterActionDone(error);
   }
 
-  void onPinTap() {
-    cleanUpAfterAction();
+  Future<void> onPinTap() async {
+    String? error = await Provider.of<NoteManager>(context, listen: false).togglePinStatuses(
+      _selectedNotes,
+    );
+    afterActionDone(error);
   }
 
-  void onDuplicateTap() {
-    cleanUpAfterAction();
+  void onDuplicateTap() async {
+    String? error = await Provider.of<NoteManager>(context, listen: false).duplicateNotes(
+      _selectedNotes,
+    );
+    afterActionDone(error);
   }
 
-  void cleanUpAfterAction() {
-    //TODO: remove toast
-    showPersistentToast("action performed");
+  void afterActionDone(String? error) {
     setState(() {
       _selectedNotes.clear();
       _isSelection = false;
     });
+    (error == null) ? showPersistentToast("success") : showPersistentToast(error);
   }
 }
 
