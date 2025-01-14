@@ -9,6 +9,7 @@ import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../data/note.dart';
+import 'widgets/note_color_picker.dart';
 import 'widgets/note_grid.dart';
 
 class NotesScreen extends StatefulWidget {
@@ -104,7 +105,8 @@ class _NotesScreenState extends State<NotesScreen> {
                     } else {
                       //in selection mode
                       setState(() {
-                        if (_selectedNotes.contains(note)) {  //TODO: note comparisons
+                        if (_selectedNotes.contains(note)) {
+                          //TODO: note comparisons
                           //unSelect
                           _selectedNotes.remove(note);
                           if (_selectedNotes.isEmpty) {
@@ -154,10 +156,12 @@ class _NotesScreenState extends State<NotesScreen> {
 
   // implement selection bar functions functions
   Future<void> onColorTap() async {
-    //call
-    // String? error = await Provider.of<NoteManager>(context, listen: false)
-    //     .changeNotesColor(_selectedNotes.map((note) => note.id).toSet(), "colorhere");
-    // afterActionDone(error);
+    String? color = await _showColorPickerDialog(context);
+    if (color != null) {
+      String? error = await Provider.of<NoteManager>(context, listen: false)
+          .changeNotesColor(_selectedNotes, color);
+      afterActionDone(error);
+    }
   }
 
   void onDeleteTap() async {
@@ -190,6 +194,7 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 }
 
+//=================Widgets======================
 void _showLogoutDialog(BuildContext context) {
   AppAuthManager authMananger = context.read<AppAuthManager>();
   showDialog(
@@ -214,6 +219,30 @@ void _showLogoutDialog(BuildContext context) {
             child: const Text('Logout'),
           ),
         ],
+      );
+    },
+  );
+}
+
+Future<dynamic> _showColorPickerDialog(BuildContext context) async {
+  return showDialog(
+    context: context,
+    barrierDismissible: true, // Allow dismissal by tapping outside
+    builder: (context) {
+      return Dialog( // Use Dialog instead of AlertDialog
+        backgroundColor: Colors.transparent, // Make background transparent
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NoteColorPicker(
+              initialColor: Colors.transparent,
+              onColorChanged: (colorHex) {
+                Navigator.of(context).pop(colorHex);
+              },
+              isGridView: true,
+            ),
+          ],
+        ),
       );
     },
   );

@@ -37,7 +37,7 @@ class NoteCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: borderColor,
-            width: isSelected ? 2 : 1,
+            width: isSelected ? 1 : 1,
           ),
         ),
         child: Padding(
