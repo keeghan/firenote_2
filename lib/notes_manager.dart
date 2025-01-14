@@ -74,7 +74,6 @@ class NoteManager extends ChangeNotifier {
 
   // Save new note
   Future<String?> saveNote(Note note) async {
-    if (note.color == "#000000") note.color = '#00FFFFFF';
     try {
       note.dateTimeString = getFormattedDateTime();
       note.id = 'note_${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';

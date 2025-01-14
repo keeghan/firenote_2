@@ -18,7 +18,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   Note note = Note();
   bool _isEdit = false;
   bool _pinStatus = false;
-  Color _noteColor = Colors.black;
+  Color _noteColor = hexToColor('#00FFFFFF');
   DateTime _noteDateTime = DateTime.now();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
