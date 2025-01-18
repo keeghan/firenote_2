@@ -3,16 +3,15 @@ import 'package:firenote_2/utils/fire_note_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-
 PreferredSizeWidget buildSelectionBar(
-    BuildContext context,
-    final VoidCallback? onColorTap,
-    final VoidCallback? onDeleteTap,
-    final VoidCallback? onPinTap,
-    final VoidCallback? onDuplicateTap,
-    final VoidCallback? onCancelTap,
-    final int selectedCount,
-    ) {
+  BuildContext context,
+  final VoidCallback? onColorTap,
+  final VoidCallback? onDeleteTap,
+  final VoidCallback? onPinTap,
+  final VoidCallback? onDuplicateTap,
+  final VoidCallback? onCancelTap,
+  final int selectedCount,
+) {
   return AppBar(
     key: const ValueKey('selectionBar'),
     backgroundColor: appBarColor,
@@ -107,7 +106,7 @@ PreferredSizeWidget buildSelectionBar(
 PreferredSizeWidget buildDefaultNoteBar(
   bool isGridView,
   Function toggleGridView,
-  Function showLogoutDialog,
+  VoidCallback showLogoutDialog,
 ) {
   return AppBar(
     backgroundColor: appBarColor,
@@ -132,7 +131,7 @@ PreferredSizeWidget buildDefaultNoteBar(
         if (authManager.loggedIn) {
           return InkWell(
             // Tap to logout
-            onTap: () => showLogoutDialog,
+            onTap: showLogoutDialog,
             child: CircleAvatar(
                 backgroundColor: const Color(0xFF00B894),
                 child: Text(authManager.userChar, style: const TextStyle(color: Colors.white))),

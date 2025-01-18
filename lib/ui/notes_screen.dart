@@ -196,7 +196,6 @@ class _NotesScreenState extends State<NotesScreen> {
 
 //=================Widgets======================
 void _showLogoutDialog(BuildContext context) {
-  AppAuthManager authMananger = context.read<AppAuthManager>();
   showDialog(
     context: context,
     builder: (context) {
@@ -210,6 +209,7 @@ void _showLogoutDialog(BuildContext context) {
           ),
           TextButton(
             onPressed: () async {
+              AppAuthManager authMananger = context.read<AppAuthManager>();
               await authMananger.signOut();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => AuthPage()),
@@ -229,7 +229,8 @@ Future<dynamic> _showColorPickerDialog(BuildContext context) async {
     context: context,
     barrierDismissible: true, // Allow dismissal by tapping outside
     builder: (context) {
-      return Dialog( // Use Dialog instead of AlertDialog
+      return Dialog(
+        // Use Dialog instead of AlertDialog
         backgroundColor: Colors.transparent, // Make background transparent
         child: Column(
           mainAxisSize: MainAxisSize.min,
