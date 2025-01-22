@@ -60,7 +60,9 @@ class _NotesScreenState extends State<NotesScreen> {
       //User NoteManager Consumer and StramBuilder to build notes
       body: Consumer<NoteManager>(
         builder: (context, noteManager, _) {
-          if (!noteManager.isInitialized) {
+          //If not initiallized present errorbox, 
+          //to prevent null exception on database ref
+          if (!noteManager.isInitialized && !noteManager.isLoading) {
             return _buildErrorBox(context, noteManager, "check Internet and Try again");
           }
 
@@ -73,13 +75,13 @@ class _NotesScreenState extends State<NotesScreen> {
                     'Error: ${snapshot.error is StateError ? 'Please check your connection' : 'Unable to load notes'}';
                 _buildErrorBox(context, noteManager, errorMsg);
               }
-
-              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              //if loading list display progress indicator
+              if (noteManager.isLoading ) {
                 return const Center(child: CircularProgressIndicator());
               }
-
+              
               if (snapshot.data == null) {
-                return _buildErrorBox(context, noteManager, "An unexpected Error Occured");
+                return _buildErrorBox(context, noteManager, "check your internet and Try again");
               }
 
               if (snapshot.data != null && snapshot.data!.isEmpty) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -30,7 +32,7 @@ class NoteManager extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      //  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       _database = FirebaseDatabase.instance;
       _auth = FirebaseAuth.instance;
       await _setupNoteRef();
@@ -106,13 +108,18 @@ class NoteManager extends ChangeNotifier {
 
   Future<void> refreshNotes() async {
     if (_isLoading) return;
+    setup();
     try {
-      setup();
       final userId = _auth?.currentUser?.uid;
       if (userId != null) {
         _noteRef = _database?.ref(userId);
         // force a refresh of the data
-        await _noteRef?.get();
+        await _noteRef!.get().timeout(
+          const Duration(seconds: 7),
+          onTimeout: () {
+            throw TimeoutException('Network timeout');
+          },
+        );
       }
     } catch (e) {
       rethrow;
