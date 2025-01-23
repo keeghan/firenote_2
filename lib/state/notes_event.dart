@@ -8,8 +8,6 @@ abstract class NotesEvent {
 
 class InitializeNotes extends NotesEvent {}
 
-class RefreshNotes extends NotesEvent {}
-
 class LoadNotes extends NotesEvent {}
 
 class ToggleGridView extends NotesEvent {}

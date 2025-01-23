@@ -24,6 +24,9 @@ class NotesScreen2 extends StatelessWidget {
         if (state.noteStatus == NoteStatus.failure) {
           Utils.showSnackBar(context, state.exception.toString());
         }
+        if (state.noteStatus == NoteStatus.initial) {
+          context.read<NotesBloc>().add(InitializeNotes());
+        }
       },
       builder: (context, state) {
         return Scaffold(
@@ -59,23 +62,28 @@ class NotesScreen2 extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    //Check error State
+    // Check error State
     if (state.noteStatus == NoteStatus.failure) {
       return _buildErrorBox(context, state.exception.toString());
     }
 
     if (state.noteStatus == NoteStatus.success) {
-      if (state.notes.isEmpty) {
+      //null check
+      if (state.notes == null) {
+        return _buildErrorBox(context, 'something went wrong,could not retrieve notes');
+      }
+
+      if (state.notes!.isEmpty) {
         return const Center(child: Text('Add notes'));
       }
 
       return RefreshIndicator(
         onRefresh: () async {
-          context.read<NotesBloc>().add(RefreshNotes());
+          context.read<NotesBloc>().add(LoadNotes());
         },
         child: NotesGrid(
           isGridView: state.isGridView,
-          notesList: state.notes,
+          notesList: state.notes!,
           onTap: (note) {
             if (!state.isMultiSelectionMode) {
               context.go('/notes/edit', extra: note);
@@ -109,7 +117,7 @@ class NotesScreen2 extends StatelessWidget {
           AuthButton(
             text: 'Retry',
             onButtonPress: () {
-              context.read<NotesBloc>().add(RefreshNotes());
+              context.read<NotesBloc>().add(LoadNotes());
             },
             isStretched: false,
           ),

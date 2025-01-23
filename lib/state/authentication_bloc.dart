@@ -22,7 +22,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     on<SignOutUser>(_onSignOut);
     on<RecoverUserPassword>(_onPasswordRecovery);
     on<CheckCurrentUser>(_onCheckCurrentUser);
-
+    //check if user exits (previous login)
     add(CheckCurrentUser());
   }
 

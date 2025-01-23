@@ -21,7 +21,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
   NotesBloc() : super(NotesState()) {
     on<InitializeNotes>(_onInitialize);
     on<LoadNotes>(_onLoadNotes);
-    on<RefreshNotes>(_onRefreshNotes);
+    // on<RefreshNotes>(_onRefreshNotes);
     on<ToggleGridView>(_onToggleGridView);
     on<OnLongPress>(_onLongPress);
     on<OnNoteTap>(_onNoteTap);
@@ -43,7 +43,6 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       final isGridView = await PreferencesService.getIsGridView(); // Get saved preference
       emit(state.copyWith(isGridView: isGridView, noteStatus: NoteStatus.loading));
       add(LoadNotes());
-      emit(state.copyWith(noteStatus: NoteStatus.success));
     } catch (e) {
       emit(state.copyWith(noteStatus: NoteStatus.failure, exception: e as Exception));
     }
@@ -58,37 +57,62 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     }
   }
 
-  Future<void> _onLoadNotes(LoadNotes event, Emitter<NotesState> emit) async {
-    try {
-      await _notesSubscription?.cancel();
-      _notesSubscription = _noteRef?.onValue.listen(
-        (event) {
+ Future<void> _onLoadNotes(LoadNotes event, Emitter<NotesState> emit) async {
+  try {
+    await _setupNoteRef();
+    await _notesSubscription?.cancel();
+
+    final completer = Completer<void>();
+    _notesSubscription = _noteRef?.onValue.listen(
+      (event) async {
+        try {
           final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
           if (data == null) {
-            emit(state.copyWith(exception: Exception("No notes"), noteStatus: NoteStatus.failure));
+            emit(state.copyWith(
+              exception: Exception("No notes"),
+              noteStatus: NoteStatus.failure,
+              notes: null,
+            ));
+            completer.complete();
             return;
           }
 
-          final notes =
-              data.values.map((value) => Note.fromMap(Map<String, dynamic>.from(value))).toList();
-
+          final notes = data.values
+              .map((value) => Note.fromMap(Map<String, dynamic>.from(value)))
+              .toList();
           notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
+
           emit(state.copyWith(noteStatus: NoteStatus.success, notes: notes));
-        },
-        onError: (error) {
+          completer.complete();
+        } catch (e) {
           emit(state.copyWith(
-            exception: Exception(error.toString()),
+            exception: Exception(e.toString()),
             noteStatus: NoteStatus.failure,
+            notes: null,
           ));
-        },
-      );
-    } catch (e) {
-      emit(state.copyWith(
-        exception: e as Exception,
-        noteStatus: NoteStatus.failure,
-      ));
-    }
+          completer.completeError(e);
+        }
+      },
+      onError: (error) {
+        emit(state.copyWith(
+          exception: Exception(error.toString()),
+          noteStatus: NoteStatus.failure,
+          notes: null,
+        ));
+        completer.completeError(error);
+      },
+    );
+
+    // Wait for the first event to complete
+    await completer.future;
+  } catch (e) {
+    emit(state.copyWith(
+      exception: e as Exception,
+      noteStatus: NoteStatus.failure,
+    ));
   }
+}
+
 
   Future<void> _onDuplicateNotes(DuplicateNotes event, Emitter<NotesState> emit) async {
     try {
@@ -137,19 +161,20 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     }
   }
 
-  Future<void> _onRefreshNotes(RefreshNotes event, Emitter<NotesState> emit) async {
-    try {
-      await _setupNoteRef();
-      await _noteRef!.get().timeout(
-        const Duration(seconds: 7),
-        onTimeout: () {
-          throw TimeoutException('Network timeout');
-        },
-      );
-    } catch (e) {
-      _onFailure(e, event, emit);
-    }
-  }
+  // Future<void> _onRefreshNotes(RefreshNotes event, Emitter<NotesState> emit) async {
+  //   try {
+  //     await _setupNoteRef();
+  //     await _noteRef!.get().timeout(
+  //       const Duration(seconds: 7),
+  //       onTimeout: () {
+  //         throw TimeoutException('Network timeout');
+  //       },
+  //     );
+  //     add(LoadNotes());
+  //   } catch (e) {
+  //     _onFailure(e, event, emit);
+  //   }
+  // }
 
   void _onLongPress(OnLongPress event, Emitter<NotesState> emit) {
     if (state.isMultiSelectionMode) return;
@@ -187,8 +212,10 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     emit(state.copyWith(selectedNotes: {}, isMultiSelectionMode: false));
   }
 
-  void _onToggleGridView(ToggleGridView event, Emitter<NotesState> emit) {
-    emit(state.copyWith(isGridView: state.isGridView));
+  void _onToggleGridView(ToggleGridView event, Emitter<NotesState> emit) async {
+    await PreferencesService.setIsGridView(!state.isGridView);
+    final updatedValue = await PreferencesService.getIsGridView();
+    emit(state.copyWith(isGridView: updatedValue));
   }
 
   @override

@@ -1,13 +1,14 @@
-import 'package:firenote_2/app_auth_manager.dart';
-import 'package:firenote_2/ui/notes_screen.dart';
-import 'package:firenote_2/ui/notes_screen_2.dart';
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/authentication_event.dart';
+import 'package:firenote_2/state/authentication_state.dart';
 import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
 import 'package:firenote_2/ui/widgets/auth_textfield.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -22,7 +23,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmationController = TextEditingController();
-  late AppAuthManager _appAuthManager;
 
   String? _emailError;
   String? _passwordError;
@@ -38,10 +38,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _appAuthManager = Provider.of<AppAuthManager>(context);
     return Scaffold(
-      body: Consumer<AppAuthManager>(
-        builder: (context, authState, _) {
+      body: BlocConsumer<AuthenticationBloc, AuthenticationState>(
+        builder: (context, authState) {
           return Stack(
             children: [
               SafeArea(
@@ -98,16 +97,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 24),
                         AuthButton(
                           text: 'SIGN UP',
-                          onButtonPress: _handleSignUp,
+                          onButtonPress: () {
+                            if (isFormValid()) {
+                              FocusScope.of(context).unfocus();
+
+                              context.read<AuthenticationBloc>().add(
+                                    SignUpUser(
+                                      _emailController.text,
+                                      _passwordController.text,
+                                    ),
+                                  );
+                            }
+                          },
                           isStretched: true,
                         ),
 
                         // Sign In Button
                         const SizedBox(height: 24),
                         AuthTextButton(
-                          onButtonPress: () {
-                            Navigator.pop(context);
-                          },
+                          onButtonPress: () => context.pop(),
                           text: "Already Have an Account?",
                         ),
                       ],
@@ -116,7 +124,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               //Cover screen with circularLoading icon
-              if (authState.isLoading)
+              if (authState is AuthenticationLoadingState)
                 Positioned(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.3),
@@ -125,6 +133,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
             ],
           );
+        },
+        listener: (BuildContext context, state) {
+          //login redirected using go_router
+          if (state is AuthenticationFailureState) {
+            Utils.showSnackBar(context, state.errorMessage);
+          }
         },
       ),
     );
@@ -176,25 +190,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
     validatePassword(_passwordController.text);
     validateConfirmation(_confirmationController.text);
     return _emailError == null && _passwordError == null && _confirmationError == null;
-  }
-
-  void _handleSignUp() async {
-    FocusScope.of(context).unfocus();
-
-    if (isFormValid()) {
-      // String hashedPassword = Utils.encryptPassword(_passwordController.text);
-      String? result = await _appAuthManager.signUpWithEmailPassword(
-          _emailController.text, _passwordController.text);
-      if (!mounted) return;
-      if (result == null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => NotesScreen2()),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        Utils.showSnackBar(context, result);
-      }
-    }
   }
 }

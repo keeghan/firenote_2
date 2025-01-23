@@ -6,13 +6,13 @@ final class NotesState {
   final bool isMultiSelectionMode;
   final bool isGridView;
   final NoteStatus noteStatus;
-  final List<Note> notes;
+  final List<Note>? notes;
   final Set<Note> selectedNotes;
   final Exception? exception;
 
   NotesState({
     this.isMultiSelectionMode = false,
-    this.notes = const <Note>[],
+    this.notes = null,
     this.selectedNotes = const <Note>{},
     this.exception = null,
     this.isGridView = false,
@@ -38,11 +38,13 @@ final class NotesState {
   }
 
   List<Note> get pinnedNotes {
-    return notes.where((note) => note.pinStatus).toList();
+    if (notes == null) return [];
+    return notes!.where((note) => note.pinStatus).toList();
   }
 
   List<Note> get unPinnedNotes {
-    return notes.where((note) => !note.pinStatus).toList();
+    if (notes == null) return [];
+    return notes!.where((note) => !note.pinStatus).toList();
   }
 
   //   return notes,

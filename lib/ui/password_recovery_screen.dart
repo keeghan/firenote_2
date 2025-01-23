@@ -1,9 +1,11 @@
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/authentication_event.dart';
+import 'package:firenote_2/state/authentication_state.dart';
 import 'package:firenote_2/ui/widgets/auth_textfield.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../app_auth_manager.dart';
 import 'widgets/auth_button.dart';
 
 class PasswordRecoveryScreen extends StatefulWidget {
@@ -16,7 +18,6 @@ class PasswordRecoveryScreen extends StatefulWidget {
 class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   final _emailController = TextEditingController();
   String? _emailError;
-  late AppAuthManager _appAuthManager;
 
   @override
   void dispose() {
@@ -26,11 +27,9 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _appAuthManager = Provider.of<AppAuthManager>(context);
-
     return Scaffold(
-      body: Consumer<AppAuthManager>(
-        builder: (context, authState, _) {
+      body: BlocConsumer<AuthenticationBloc, AuthenticationState>(
+        builder: (context, authState) {
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -38,7 +37,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   //display circular loading icon
-                  if (authState.isLoading) ...[
+                  if (authState is AuthenticationLoadingState) ...[
                     Positioned(
                       child: Container(
                         color: Colors.black.withValues(alpha: 0.3),
@@ -70,13 +69,28 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                   const SizedBox(height: 24),
                   AuthButton(
                     text: 'SEND RECOVERY EMAIL',
-                    onButtonPress: _handleSendRecoveryEmail,
+                    onButtonPress: () {
+                      validateEmail(_emailController.text);
+                      if (_emailError != null) return;
+                      FocusScope.of(context).unfocus();
+                      context
+                          .read<AuthenticationBloc>()
+                          .add(RecoverUserPassword(_emailController.text));
+                    },
                     isStretched: true,
                   ),
                 ],
               ),
             ),
           );
+        },
+        listener: (BuildContext context, state) {
+          if (state is AuthenticationActionSuccessState) {
+            Utils.showPersistentToast(state.successMessage);
+          }
+          if (state is AuthenticationFailureState) {
+            Utils.showPersistentToast(state.errorMessage);
+          }
         },
       ),
     );
@@ -93,20 +107,5 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
         _emailError = null;
       }
     });
-  }
-
-  void _handleSendRecoveryEmail() async {
-    validateEmail(_emailController.text);
-    if (_emailError != null) return;
-    FocusScope.of(context).unfocus();
-
-    String? result = await _appAuthManager.recoverPassword(_emailController.text);
-    if (!mounted) return;
-    if (result == null) {
-      Utils.showSnackBar(context, 'Recovery Email sent');
-      Navigator.pop(context); //Go Back to signIn screen
-    } else {
-      Utils.showSnackBar(context, result);
-    }
   }
 }

@@ -1,8 +1,6 @@
 import 'package:firenote_2/state/authentication_bloc.dart';
 import 'package:firenote_2/state/authentication_event.dart';
 import 'package:firenote_2/state/authentication_state.dart';
-import 'package:firenote_2/ui/password_recovery_screen.dart';
-import 'package:firenote_2/ui/sign_up_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
 import 'package:firenote_2/ui/widgets/auth_textfield.dart';
@@ -104,10 +102,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             //reset error state
                             _emailError = null;
                             _passwordError = null;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => SignUpScreen()),
-                            );
+                            context.go('/auth/signup');
                           },
                           text: "Don't have an Account?",
                         ),
@@ -115,10 +110,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         // Password Recovery Button
                         AuthTextButton(
                           onButtonPress: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => PasswordRecoveryScreen()),
-                            );
+                            context.go('/auth/recover');
                           },
                           text: "Forgot Password?",
                         ),
@@ -173,26 +165,4 @@ class _SignInScreenState extends State<SignInScreen> {
       }
     });
   }
-
-  // void _handleSignIn() async {
-  //   validateEmail(_emailController.text);
-  //   validatePassword(_passwordController.text);
-  //   if (_emailError == null && _passwordError == null) {
-  //     FocusScope.of(context).unfocus();
-
-  //     // String hashedPassword = Utils.encryptPassword(_passwordController.text);
-  //     String? result = await _appAuthManager.signInWithEmailPassword(
-  //         _emailController.text, _passwordController.text);
-  //     if (!mounted) return;
-  //     if (result == null) {
-  //       Navigator.pushAndRemoveUntil(
-  //         context,
-  //         MaterialPageRoute(builder: (context) => NotesScreen2()),
-  //         (Route<dynamic> route) => false,
-  //       );
-  //     } else {
-  //       Utils.showSnackBar(context, result);
-  //     }
-  //   }
-  // }
 }
