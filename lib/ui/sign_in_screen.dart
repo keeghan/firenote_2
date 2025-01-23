@@ -1,4 +1,6 @@
-import 'package:firenote_2/ui/notes_screen.dart';
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/authentication_event.dart';
+import 'package:firenote_2/state/authentication_state.dart';
 import 'package:firenote_2/ui/password_recovery_screen.dart';
 import 'package:firenote_2/ui/sign_up_screen.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
@@ -6,9 +8,9 @@ import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
 import 'package:firenote_2/ui/widgets/auth_textfield.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-import '../app_auth_manager.dart';
 import 'widgets/auth_button.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -25,7 +27,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   String? _emailError;
   String? _passwordError;
-  late AppAuthManager _appAuthManager;
 
   @override
   void dispose() {
@@ -36,11 +37,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _appAuthManager = Provider.of<AppAuthManager>(context);
-
     return Scaffold(
-      body: Consumer<AppAuthManager>(
-        builder: (context, authState, _) {
+      body: BlocConsumer<AuthenticationBloc, AuthenticationState>(
+        builder: (context, authState) {
           return Stack(
             children: [
               SafeArea(
@@ -85,7 +84,16 @@ class _SignInScreenState extends State<SignInScreen> {
                         const SizedBox(height: 24),
                         AuthButton(
                           text: 'SIGN IN',
-                          onButtonPress: _handleSignIn,
+                          onButtonPress: () {
+                            validateEmail(_emailController.text);
+                            validatePassword(_passwordController.text);
+                            if (_emailError == null && _passwordError == null) {
+                              FocusScope.of(context).unfocus();
+                              context.read<AuthenticationBloc>().add(
+                                    SignInUser(_emailController.text, _passwordController.text),
+                                  );
+                            }
+                          },
                           isStretched: true,
                         ),
 
@@ -121,7 +129,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
 
               // Cover screen with circularLoading icon
-              if (authState.isLoading)
+              if (authState is AuthenticationLoadingState)
                 Positioned(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.3),
@@ -130,6 +138,12 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
             ],
           );
+        },
+        listener: (BuildContext context, state) {
+          //login redirected using go_router
+          if (state is AuthenticationFailureState) {
+            Utils.showSnackBar(context, state.errorMessage);
+          }
         },
       ),
     );
@@ -160,25 +174,25 @@ class _SignInScreenState extends State<SignInScreen> {
     });
   }
 
-  void _handleSignIn() async {
-    validateEmail(_emailController.text);
-    validatePassword(_passwordController.text);
-    if (_emailError == null && _passwordError == null) {
-      FocusScope.of(context).unfocus();
+  // void _handleSignIn() async {
+  //   validateEmail(_emailController.text);
+  //   validatePassword(_passwordController.text);
+  //   if (_emailError == null && _passwordError == null) {
+  //     FocusScope.of(context).unfocus();
 
-      // String hashedPassword = Utils.encryptPassword(_passwordController.text);
-      String? result = await _appAuthManager.signInWithEmailPassword(
-          _emailController.text, _passwordController.text);
-      if (!mounted) return;
-      if (result == null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => NotesScreen()),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        Utils.showSnackBar(context, result);
-      }
-    }
-  }
+  //     // String hashedPassword = Utils.encryptPassword(_passwordController.text);
+  //     String? result = await _appAuthManager.signInWithEmailPassword(
+  //         _emailController.text, _passwordController.text);
+  //     if (!mounted) return;
+  //     if (result == null) {
+  //       Navigator.pushAndRemoveUntil(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => NotesScreen2()),
+  //         (Route<dynamic> route) => false,
+  //       );
+  //     } else {
+  //       Utils.showSnackBar(context, result);
+  //     }
+  //   }
+  // }
 }

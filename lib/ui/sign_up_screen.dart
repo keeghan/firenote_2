@@ -1,5 +1,6 @@
 import 'package:firenote_2/app_auth_manager.dart';
 import 'package:firenote_2/ui/notes_screen.dart';
+import 'package:firenote_2/ui/notes_screen_2.dart';
 import 'package:firenote_2/ui/widgets/auth_button.dart';
 import 'package:firenote_2/ui/widgets/auth_passwordfield.dart';
 import 'package:firenote_2/ui/widgets/auth_textbutton.dart';
@@ -188,7 +189,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (result == null) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => NotesScreen()),
+          MaterialPageRoute(builder: (context) => NotesScreen2()),
           (Route<dynamic> route) => false,
         );
       } else {

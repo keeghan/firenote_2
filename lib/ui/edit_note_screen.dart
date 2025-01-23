@@ -227,7 +227,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       error = await noteManager.saveNote(note);
       success = "note saved";
     }
-    error != null ? showPersistentToast('error: $error') : showPersistentToast(success);
+    error != null ? Utils.showPersistentToast('error: $error') : Utils.showPersistentToast(success);
     return error == null;
   }
 

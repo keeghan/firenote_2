@@ -1,46 +1,113 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firenote_2/firebase_options.dart';
-import 'package:firenote_2/notes_manager.dart';
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/notes_bloc.dart';
+import 'package:firenote_2/ui/edit_note_screen.dart';
+import 'package:firenote_2/ui/password_recovery_screen.dart';
+import 'package:firenote_2/ui/sign_in_screen.dart';
+import 'package:firenote_2/ui/sign_up_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-import 'app_auth_manager.dart';
-import 'auth_page.dart';
-import 'utils/theme_provider.dart';
+import 'data/note.dart';
+import 'ui/notes_screen_2.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => NoteManager()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AppAuthManager()),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  final authBloc = AuthenticationBloc();
+  final notesBloc = NotesBloc();
+  //force go router to referesh on authchanges
+   FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    router.refresh();
+  });
+  runApp(MyApp(authBloc: authBloc, notesBloc: notesBloc));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthenticationBloc authBloc;
+  final NotesBloc notesBloc;
+  const MyApp({super.key, required this.authBloc, required this.notesBloc});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Firenote',
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: themeProvider.themeMode,
-          home: const AuthPage(),
-        );
-      },
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthenticationBloc>(create: (context) => authBloc),
+        BlocProvider<NotesBloc>(create: (context) => notesBloc)
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        title: 'Firenote',
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        //  themeMode: themeProvider.themeMode,
+      ),
     );
   }
 }
+
+//Navigation Setup
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+final router = GoRouter(
+  navigatorKey: _rootNavigatorKey,
+  debugLogDiagnostics: true,
+  redirect: (BuildContext context, GoRouterState state) {
+    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    print('Current user: ${FirebaseAuth.instance.currentUser}'); // Debug print
+    print('Is Logged In: $isLoggedIn');
+    final bool isAuthRoute = state.uri.toString().startsWith('/auth');
+    if (!isLoggedIn && !isAuthRoute) {
+      return '/auth/signin';
+    }
+    if (isLoggedIn && isAuthRoute) {
+      return '/notes';
+    }
+    return null;
+  },
+  routes: [
+    // Auth route with sub-routes for login, signup, and recovery
+    GoRoute(
+      path: '/auth',
+      builder: (context, state) => const SignInScreen(), // Default to sign in
+      routes: [
+        GoRoute(
+          path: 'signin',
+          builder: (context, state) => const SignInScreen(),
+        ),
+        GoRoute(
+          path: 'signup',
+          builder: (context, state) => const SignUpScreen(),
+        ),
+        GoRoute(
+          path: 'recover',
+          builder: (context, state) => const PasswordRecoveryScreen(),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/notes',
+      builder: (context, state) => const NotesScreen2(),
+      routes: [
+        GoRoute(
+          path: 'edit',
+          builder: (context, state) {
+            final note = state.extra as Note?;
+            return EditNoteScreen(note: note);
+          },
+        ),
+      ],
+    ),
+    // Redirect root to notes
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/notes',
+    ),
+  ],
+);
 
 //Themes for easy Access
 final ThemeData lightTheme = ThemeData(

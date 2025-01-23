@@ -21,7 +21,7 @@ class Utils {
       SnackBar(
         backgroundColor: Theme.of(context).colorScheme.surfaceTint,
         content: Text(message, textAlign: TextAlign.center),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
@@ -29,6 +29,16 @@ class Utils {
         ),
       ),
     );
+  }
+
+  static void showPersistentToast(String msg) {
+    Fluttertoast.showToast(
+        msg: msg,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black87,
+        textColor: Colors.grey,
+        fontSize: 16.0);
   }
 }
 
@@ -111,19 +121,6 @@ String formatLastEdited(DateTime dateTime) {
     return '${duration.inMinutes}m';
   }
 }
-
-
-
-void showPersistentToast(String msg) {
-    Fluttertoast.showToast(
-      msg: msg,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.black87,
-      textColor: Colors.grey,
-      fontSize: 16.0
-    );
-  }
 
 //Sample notes
 List<Note> sampelnotes = [

@@ -21,6 +21,9 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     on<SignInUser>(_onUserSignIn);
     on<SignOutUser>(_onSignOut);
     on<RecoverUserPassword>(_onPasswordRecovery);
+    on<CheckCurrentUser>(_onCheckCurrentUser);
+
+    add(CheckCurrentUser());
   }
 
   Future<void> _onUserSignUp(
@@ -29,9 +32,8 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
   ) async {
     emit(AuthenticationLoadingState());
     try {
-      final UserModel? user = await _withTimeout(
-        authService.signUpUser(event.email, event.password)
-      );
+      final UserModel? user =
+          await _withTimeout(authService.signUpUser(event.email, event.password));
       if (user != null) {
         emit(AuthenticationSuccessState(user));
       } else {
@@ -55,9 +57,8 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
   ) async {
     emit(AuthenticationLoadingState());
     try {
-      final UserModel? user = await _withTimeout(
-        authService.signInUser(event.email, event.password)
-      );
+      final UserModel? user =
+          await _withTimeout(authService.signInUser(event.email, event.password));
       if (user != null) {
         emit(AuthenticationSuccessState(user));
       } else {
@@ -75,14 +76,11 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     }
   }
 
-  Future<void> _onSignOut(
-    SignOutUser event, 
-    Emitter<AuthenticationState> emit
-  ) async {
+  Future<void> _onSignOut(SignOutUser event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoadingState());
     try {
       await _withTimeout(authService.signOutUser());
-      emit(const AuthenticationActionSuccessState("Sign out successful"));
+      emit(AuthenticationInitialState());
     } on FirebaseAuthException catch (e) {
       _logger.warning('Firebase auth error during signout', e);
       emit(AuthenticationFailureState(_handleAuthError(e)));
@@ -96,9 +94,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
   }
 
   Future<void> _onPasswordRecovery(
-    RecoverUserPassword event,
-    Emitter<AuthenticationState> emit
-  ) async {
+      RecoverUserPassword event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoadingState());
     try {
       await _withTimeout(authService.recoverPassword(event.email));
@@ -112,6 +108,24 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     } catch (e) {
       _logger.severe('Unexpected error during password recovery', e);
       emit(AuthenticationFailureState(_handleGenericError(e)));
+    }
+  }
+
+  Future<void> _onCheckCurrentUser(
+      CheckCurrentUser event, Emitter<AuthenticationState> emit) async {
+    try {
+      final UserModel? currentUser = await authService.getCurrentUser();
+
+      if (currentUser != null) {
+        _logger.info('Existing user found: ${currentUser.email}');
+        emit(AuthenticationSuccessState(currentUser));
+      } else {
+        _logger.info('No existing user found');
+        emit(AuthenticationInitialState());
+      }
+    } catch (e) {
+      _logger.severe('Error checking current user', e);
+      emit(AuthenticationInitialState());
     }
   }
 

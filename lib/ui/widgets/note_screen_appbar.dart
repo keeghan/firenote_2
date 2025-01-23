@@ -1,7 +1,8 @@
-import 'package:firenote_2/app_auth_manager.dart';
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/authentication_state.dart';
 import 'package:firenote_2/utils/fire_note_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 PreferredSizeWidget buildSelectionBar(
   BuildContext context,
@@ -127,21 +128,32 @@ PreferredSizeWidget buildDefaultNoteBar(
         tooltip: isGridView ? 'Switch to list view' : 'Switch to grid view',
       ),
       //Show User Icon
-      Consumer<AppAuthManager>(builder: (context, authManager, _) {
-        if (authManager.loggedIn) {
-          return InkWell(
-            // Tap to logout
-            onTap: showLogoutDialog,
-            child: CircleAvatar(
+      BlocConsumer<AuthenticationBloc, AuthenticationState>(
+        builder: (context, authState) {
+          if (authState is AuthenticationSuccessState) {
+            String initial = '';
+            if (authState.user.displayName != null && authState.user.displayName!.isNotEmpty) {
+              initial = authState.user.displayName![0];
+            } else if (authState.user.email != null && authState.user.email!.isNotEmpty) {
+              initial = authState.user.email![0];
+            }
+
+            return InkWell(
+              onTap: showLogoutDialog,
+              child: CircleAvatar(
                 backgroundColor: const Color(0xFF00B894),
-                child: Text(authManager.userChar, style: const TextStyle(color: Colors.white))),
-          );
-        } else {
-          return SizedBox(
-            width: 2,
-          );
-        }
-      }),
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            );
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+        listener: (context, authState) {},
+      ),
       const SizedBox(width: 8),
     ],
   );

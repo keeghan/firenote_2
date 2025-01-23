@@ -34,3 +34,7 @@ class SignInUser extends AuthenticationEvent {
 }
 
 class SignOutUser extends AuthenticationEvent {}
+
+class CheckCurrentUser extends AuthenticationEvent {
+  const CheckCurrentUser();
+}

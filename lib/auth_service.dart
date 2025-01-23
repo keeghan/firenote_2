@@ -22,6 +22,7 @@ class AuthService {
         displayName: firebaseUser.displayName ?? '',
       );
     }
+    return null;
   }
 
   Future<UserModel?> signInUser(
@@ -40,6 +41,7 @@ class AuthService {
         displayName: firebaseUser.displayName ?? '',
       );
     }
+    return null;
   }
 
   ///signOutUser
@@ -54,5 +56,16 @@ class AuthService {
     final instance = FirebaseAuth.instance;
     instance.sendPasswordResetEmail(email: email);
   }
-     
+
+  Future<UserModel?> getCurrentUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      return UserModel(
+        id: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? '',
+      );
+    }
+    return null;
+  }
 }
