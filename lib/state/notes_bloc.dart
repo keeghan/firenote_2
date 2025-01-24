@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firenote_2/data/note.dart';
 import 'package:firenote_2/state/notes_event.dart';
 import 'package:firenote_2/state/notes_state.dart';
+import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utils/preference_service.dart';
 
 // Additional Events
+class ResetNotesActionState extends NotesEvent {}
 
 class NotesBloc extends Bloc<NotesEvent, NotesState> {
   final FirebaseDatabase _database = FirebaseDatabase.instance;
@@ -21,7 +25,6 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
   NotesBloc() : super(NotesState()) {
     on<InitializeNotes>(_onInitialize);
     on<LoadNotes>(_onLoadNotes);
-    // on<RefreshNotes>(_onRefreshNotes);
     on<ToggleGridView>(_onToggleGridView);
     on<OnLongPress>(_onLongPress);
     on<OnNoteTap>(_onNoteTap);
@@ -30,8 +33,14 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     on<DeleteNotes>(_onDeleteNotes);
     on<ToggleNotesPin>(_onToggleNotesPin);
     on<DuplicateNotes>(_onDuplicateNotes);
-    // on<UpdateNote>(_onNotesUpdated);
-    // on<SaveNote>(_onSaveNote);
+    on<UpdateNote>(_onNotesUpdated);
+    on<SaveNote>(_onSaveNote);
+    on<ResetNotesActionState>((event, emit) {
+      emit(state.copyWith(
+        exception: null,
+        noteActionStatus: NoteActionStatus.none,
+      ));
+    });
 
     // Initialize when created
     add(InitializeNotes());
@@ -48,6 +57,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     }
   }
 
+  //Check internet first
   Future<void> _setupNoteRef() async {
     final userId = _auth.currentUser?.uid;
     if (userId != null) {
@@ -57,62 +67,61 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     }
   }
 
- Future<void> _onLoadNotes(LoadNotes event, Emitter<NotesState> emit) async {
-  try {
-    await _setupNoteRef();
-    await _notesSubscription?.cancel();
+  Future<void> _onLoadNotes(LoadNotes event, Emitter<NotesState> emit) async {
+    emit(state.copyWith(noteStatus: NoteStatus.loading));
+    try {
+      await _setupNoteRef();
+      await _notesSubscription?.cancel();
+      //check internet connection
+      await InternetAddress.lookup('example.com');
+      final noteStream = _noteRef?.onValue ?? Stream.empty();
 
-    final completer = Completer<void>();
-    _notesSubscription = _noteRef?.onValue.listen(
-      (event) async {
-        try {
-          final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
-          if (data == null) {
+      // Using emit.forEach to handle the stream events
+      await emit.forEach(
+        noteStream,
+        onData: (event) {
+          try {
+            final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
+            if (data == null) {
+              emit(state.copyWith(
+                exception: Exception("No notes"),
+                noteStatus: NoteStatus.failure,
+                notes: null,
+              ));
+              return state;
+            }
+
+            final notes =
+                data.values.map((value) => Note.fromMap(Map<String, dynamic>.from(value))).toList();
+            notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
+
+            emit(state.copyWith(noteStatus: NoteStatus.success, notes: notes));
+          } catch (e) {
             emit(state.copyWith(
-              exception: Exception("No notes"),
+              exception: Exception(e.toString()),
               noteStatus: NoteStatus.failure,
               notes: null,
             ));
-            completer.complete();
-            return;
           }
-
-          final notes = data.values
-              .map((value) => Note.fromMap(Map<String, dynamic>.from(value)))
-              .toList();
-          notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
-
-          emit(state.copyWith(noteStatus: NoteStatus.success, notes: notes));
-          completer.complete();
-        } catch (e) {
+          return state;
+        },
+        onError: (error, stackTrace) {
           emit(state.copyWith(
-            exception: Exception(e.toString()),
+            exception: Exception(error.toString()),
             noteStatus: NoteStatus.failure,
             notes: null,
           ));
-          completer.completeError(e);
-        }
-      },
-      onError: (error) {
-        emit(state.copyWith(
-          exception: Exception(error.toString()),
-          noteStatus: NoteStatus.failure,
-          notes: null,
-        ));
-        completer.completeError(error);
-      },
-    );
-
-    // Wait for the first event to complete
-    await completer.future;
-  } catch (e) {
-    emit(state.copyWith(
-      exception: e as Exception,
-      noteStatus: NoteStatus.failure,
-    ));
+          return state;
+        },
+      );
+    } catch (e) {
+      emit(state.copyWith(
+        exception: e is SocketException ? Exception('check internet connection') : e as Exception,
+        noteStatus: NoteStatus.failure,
+        notes: e is SocketException ? null : state.notes,
+      ));
+    }
   }
-}
-
 
   Future<void> _onDuplicateNotes(DuplicateNotes event, Emitter<NotesState> emit) async {
     try {
@@ -121,9 +130,10 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         return _noteRef!.child(note.id).set(note.toMap());
       });
       await Future.wait(duplicateActions);
-      emit(state.copyWith(noteStatus: NoteStatus.success, selectedNotes: {}));
+      emit(state.copyWith(
+          noteStatus: NoteStatus.success, selectedNotes: {}, isMultiSelectionMode: false));
     } catch (e) {
-      _onFailure(e, event, emit);
+      _onActionFailure(e, event, emit);
     }
   }
 
@@ -133,9 +143,10 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         (note) => _noteRef!.child(note.id).update({'color': event.color}),
       );
       await Future.wait(colorChanges);
-      emit(state.copyWith(noteStatus: NoteStatus.success, selectedNotes: {}));
+      emit(state.copyWith(
+          noteStatus: NoteStatus.success, selectedNotes: {}, isMultiSelectionMode: false));
     } catch (e) {
-      _onFailure(e, event, emit);
+      _onActionFailure(e, event, emit);
     }
   }
 
@@ -145,36 +156,24 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         (note) => _noteRef!.child(note.id).update({'pinStatus': !note.pinStatus}),
       );
       await Future.wait(toggleActions);
-      emit(state.copyWith(noteStatus: NoteStatus.success, selectedNotes: {}));
+      emit(state.copyWith(
+          noteStatus: NoteStatus.success, selectedNotes: {}, isMultiSelectionMode: false));
     } catch (e) {
-      _onFailure(e, event, emit);
+      _onActionFailure(e, event, emit);
     }
   }
 
   Future<void> _onDeleteNotes(DeleteNotes event, Emitter<NotesState> emit) async {
+    emit(state.copyWith(noteActionStatus: NoteActionStatus.loading));
     try {
       final deleteFutures = state.selectedNotes.map((note) => _noteRef!.child(note.id).remove());
       await Future.wait(deleteFutures);
-      emit(state.copyWith(noteStatus: NoteStatus.success, selectedNotes: {}));
+      emit(state.copyWith(
+          noteStatus: NoteStatus.success, selectedNotes: {}, isMultiSelectionMode: false));
     } catch (e) {
-      _onFailure(e, event, emit);
+      _onActionFailure(e, event, emit);
     }
   }
-
-  // Future<void> _onRefreshNotes(RefreshNotes event, Emitter<NotesState> emit) async {
-  //   try {
-  //     await _setupNoteRef();
-  //     await _noteRef!.get().timeout(
-  //       const Duration(seconds: 7),
-  //       onTimeout: () {
-  //         throw TimeoutException('Network timeout');
-  //       },
-  //     );
-  //     add(LoadNotes());
-  //   } catch (e) {
-  //     _onFailure(e, event, emit);
-  //   }
-  // }
 
   void _onLongPress(OnLongPress event, Emitter<NotesState> emit) {
     if (state.isMultiSelectionMode) return;
@@ -225,41 +224,45 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
   }
 
   //internal helper method to cleanup
-  void _onFailure(e, NotesEvent event, Emitter<NotesState> emit) {
-    emit(state.copyWith(noteStatus: NoteStatus.failure, exception: e as Exception));
+  void _onActionFailure(e, NotesEvent event, Emitter<NotesState> emit) {
+    emit(state.copyWith(noteActionStatus: NoteActionStatus.failure, exception: e as Exception));
+  }
+
+  //=========== EditScreen Events =============
+  Future<void> _onSaveNote(SaveNote event, Emitter<NotesState> emit) async {
+    emit(state.copyWith(exception: null, noteActionStatus: NoteActionStatus.loading));
+    try {
+      event.newNote.dateTimeString = getFormattedDateTime();
+      event.newNote.id = 'note_${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
+      await _noteRef?.child(event.newNote.id).set(event.newNote.toMap());
+      emit(state.copyWith(noteActionStatus: NoteActionStatus.success));
+    } catch (e) {
+      emit(state.copyWith(
+        noteActionStatus: NoteActionStatus.failure,
+        exception: e as Exception,
+      ));
+    }
+  }
+
+  Future<void> _onNotesUpdated(UpdateNote event, Emitter<NotesState> emit) async {
+    emit(state.copyWith(exception: null, noteActionStatus: NoteActionStatus.loading));
+    final note = event.upDatedNote;
+    try {
+      final noteObject = {
+        'color': note.color,
+        'dateTimeString': getFormattedDateTime(),
+        'id': note.id,
+        'message': note.message,
+        'pinStatus': note.pinStatus,
+        'title': note.title,
+      };
+      await _noteRef?.child(note.id).update(noteObject);
+      emit(state.copyWith(noteActionStatus: NoteActionStatus.success));
+    } catch (e) {
+      emit(state.copyWith(
+        noteActionStatus: NoteActionStatus.failure,
+        exception: e as Exception,
+      ));
+    }
   }
 }
-
-  // void _onNotesUpdated(UpdateNote event, Emitter<NotesState> emit) {
-  //   emit(NotesState(
-  //     notes: event.notes,
-  //     isGridView: state.isGridView,
-  //     selectedNotes: state.selectedNotes,
-  //     isSelectionMode: state.isSelectionMode,
-  //   ));
-  // }
-
-  // Future<void> _onSaveNote(SaveNote event, Emitter<NotesState> emit) async {
-  //   try {
-  //     final note = event.note;
-  //     if (event.isNewNote) {
-  //       note.dateTimeString = getFormattedDateTime();
-  //       note.id = 'note_${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
-  //       await _noteRef?.child(note.id).set(note.toMap());
-  //     } else {
-  //       final noteObject = {
-  //         'color': note.color,
-  //         'dateTimeString': getFormattedDateTime(),
-  //         'id': note.id,
-  //         'message': note.message,
-  //         'pinStatus': note.pinStatus,
-  //         'title': note.title,
-  //       };
-  //       await _noteRef?.child(note.id).update(noteObject);
-  //     }
-  //   } catch (e) {
-  //     emit(state.copyWith(
-  //       noteStatus:
-  //     ));
-  //   }
-  // }

@@ -1,282 +1,170 @@
-// import 'package:firenote_2/app_auth_manager.dart';
-// import 'package:firenote_2/notes_manager.dart';
-// import 'package:firenote_2/ui/edit_note_screen.dart';
-// import 'package:firenote_2/ui/widgets/auth_button.dart';
-// import 'package:firenote_2/ui/widgets/note_screen_appbar.dart';
-// import 'package:firenote_2/utils/preference_service.dart';
-// import 'package:firenote_2/utils/utils.dart';
-// import 'package:flutter/material.dart';
-// import 'package:go_router/go_router.dart';
-// import 'package:provider/provider.dart';
-// import '../data/note.dart';
-// import 'widgets/note_color_picker.dart';
-// import 'widgets/note_grid.dart';
+import 'package:firenote_2/state/authentication_bloc.dart';
+import 'package:firenote_2/state/authentication_event.dart';
+import 'package:firenote_2/state/notes_bloc.dart';
+import 'package:firenote_2/state/notes_event.dart';
+import 'package:firenote_2/state/notes_state.dart';
+import 'package:firenote_2/ui/widgets/auth_button.dart';
+import 'package:firenote_2/utils/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-// class NotesScreen extends StatefulWidget {
-//   const NotesScreen({super.key});
+import '../data/note.dart';
+import 'widgets/note_color_picker.dart';
+import 'widgets/note_grid.dart';
+import 'widgets/note_screen_appbar.dart';
 
-//   @override
-//   State<NotesScreen> createState() => _NotesScreenState();
-// }
+class NotesScreen extends StatelessWidget {
+  const NotesScreen({super.key});
 
-// class _NotesScreenState extends State<NotesScreen> {
-//   bool _isGridView = true; //track note orientation
-//   bool _isSelection = false;
-//   final Set<Note> _selectedNotes = {};
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<NotesBloc, NotesState>(
+      listener: (context, state) {
+        if (state.noteStatus == NoteStatus.failure) {
+          Utils.showShortToast(state.exception.toString());
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          appBar: !state.isMultiSelectionMode
+              ? buildDefaultNoteBar(
+                  state.isGridView,
+                  () => context.read<NotesBloc>().add(ToggleGridView()),
+                  () => _showLogoutDialog(context),
+                )
+              : buildSelectionBar(
+                  context,
+                  () => _showColorPickerDialog(context, state.selectedNotes),
+                  () => context.read<NotesBloc>().add(DeleteNotes()),
+                  () => context.read<NotesBloc>().add(ToggleNotesPin()),
+                  () => context.read<NotesBloc>().add(DuplicateNotes()),
+                  () => context.read<NotesBloc>().add(ClearSelection()),
+                  state.selectedNotes.length,
+                ),
+          body: _buildBody(context, state),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+            onPressed: () => context.go('/notes/edit'),
+            child: const Icon(Icons.add, color: Colors.black),
+          ),
+        );
+      },
+    );
+  }
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     PreferencesService.getIsGridView().then(
-//       (onValue) => _isGridView = onValue,
-//     );
-//   }
+  Widget _buildBody(BuildContext context, NotesState state) {
+    switch (state.noteStatus) {
+      case NoteStatus.loading:
+        return const Center(child: CircularProgressIndicator());
 
-//   //Change gridView preference and persist it
-//   void _toggleGridView() async {
-//     PreferencesService.setIsGridView(!_isGridView);
-//     setState(() => _isGridView = !_isGridView);
-//   }
+      case NoteStatus.failure:
+        return _buildErrorBox(context, state.exception.toString());
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       //Change appbar depending on whether a note is selected or note
-//       appBar: !_isSelection
-//           ? buildDefaultNoteBar(
-//               _isGridView,
-//               () => _toggleGridView(),
-//               () => _showLogoutDialog(context),
-//             )
-//           : buildSelectionBar(
-//               context,
-//               () => onColorTap(),
-//               () => onDeleteTap(),
-//               () => onPinTap(),
-//               () => onDuplicateTap(),
-//               () => afterActionDone("cancelled"),
-//               _selectedNotes.length,
-//             ),
-//       //User NoteManager Consumer and StramBuilder to build notes
-//       body: Consumer<NoteManager>(
-//         builder: (context, noteManager, _) {
-//           //If not initiallized present errorbox,
-//           //to prevent null exception on database ref
-//           if (!noteManager.isInitialized && !noteManager.isLoading) {
-//             return _buildErrorBox(context, noteManager, "check Internet and Try again");
-//           }
+      case NoteStatus.success:
+        if (state.notes == null) {
+          return _buildErrorBox(context, 'Failed to retrieve notes');
+        }
 
-//           return StreamBuilder<List<Note>>(
-//             stream: noteManager.notesStream,
-//             builder: (context, snapshot) {
-//               //Handle error
-//               if (snapshot.hasError) {
-//                 String errorMsg =
-//                     'Error: ${snapshot.error is StateError ? 'Please check your connection' : 'Unable to load notes'}';
-//                 _buildErrorBox(context, noteManager, errorMsg);
-//               }
-//               //if loading list display progress indicator
-//               if (noteManager.isLoading) {
-//                 return const Center(child: CircularProgressIndicator());
-//               }
+        if (state.notes!.isEmpty) {
+          return const Center(child: Text('No notes. Add a new note!'));
+        }
 
-//               if (snapshot.data == null) {
-//                 return _buildErrorBox(context, noteManager, "check your internet and Try again");
-//               }
+        return NotesGrid(
+          isGridView: state.isGridView,
+          notesList: state.notes!,
+          onTap: (note) {
+            if (!state.isMultiSelectionMode) {
+              context.go('/notes/edit', extra: note);
+            } else {
+              context.read<NotesBloc>().add(OnNoteTap(note));
+            }
+          },
+          onLongPress: (note) {
+            if (!state.isMultiSelectionMode) {
+              context.read<NotesBloc>().add(OnLongPress(note));
+            }
+          },
+          selectedNotes: state.selectedNotes.map((note) => note.id).toSet(),
+        );
 
-//               if (snapshot.data != null && snapshot.data!.isEmpty) {
-//                 return const Center(child: Text('Add notes'));
-//               }
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
-//               return RefreshIndicator(
-//                 onRefresh: () async {
-//                   noteManager.refreshNotes();
-//                 },
-//                 child: NotesGrid(
-//                   isGridView: _isGridView,
-//                   notesList: snapshot.data ?? [],
-//                   onTap: (note) {
-//                     if (!_isSelection) {
-//                       if (_selectedNotes.isNotEmpty) {
-//                         throw "Selection Error: left over notes"; //checks
-//                       }
-//                       //if no selection is going on navigate
-//                       Navigator.of(context).push(
-//                         MaterialPageRoute(builder: (context) => EditNoteScreen(note: note)),
-//                       );
-//                     } else {
-//                       //in selection mode
-//                       setState(() {
-//                         if (_selectedNotes.contains(note)) {
-//                           //TODO: note comparisons
-//                           //unSelect
-//                           _selectedNotes.remove(note);
-//                           if (_selectedNotes.isEmpty) {
-//                             _isSelection = false;
-//                           }
-//                         } else {
-//                           _selectedNotes.add(note);
-//                           if (_selectedNotes.length == 1) {
-//                             throw "Selection Error: less than 2"; //dhecks
-//                           }
-//                         }
-//                       });
-//                     }
-//                   },
-//                   onLongPress: (note) {
-//                     if (_isSelection) return;
-//                     //first selected
-//                     setState(() {
-//                       _isSelection = true;
-//                       _selectedNotes.add(note);
-//                       if (_selectedNotes.length > 1) throw "Selection Error: not first selection";
-//                     });
-//                   },
-//                   //Set of Objects not working for noteObject highlight
-//                   selectedNotes: _selectedNotes.map((note) => note.id).toSet(),
-//                 ),
-//               );
-//             },
-//           );
-//         },
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         backgroundColor: Theme.of(context).colorScheme.primary,
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-//         onPressed: () {
-//           //Create new Note
-//           Navigator.of(context).push(
-//             MaterialPageRoute(builder: (context) => EditNoteScreen(note: null)),
-//           );
-//         },
-//         child: const Icon(Icons.add, color: Colors.black),
-//       ),
-//     );
-//   }
+  Widget _buildErrorBox(BuildContext context, String errorMsg) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            errorMsg,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 16),
+          AuthButton(
+            text: 'Retry',
+            onButtonPress: () {
+              context.read<NotesBloc>().add(LoadNotes());
+            },
+            isStretched: false,
+          ),
+        ],
+      ),
+    );
+  }
 
-// //=======================================================================
+  Future<void> _showColorPickerDialog(BuildContext context, Set<Note> selectedNotes) async {
+    final color = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NoteColorPicker(
+              initialColor: Colors.transparent,
+              onColorChanged: (colorHex) {
+                Navigator.of(context).pop(colorHex);
+              },
+              isGridView: true,
+            ),
+          ],
+        ),
+      ),
+    );
 
-//   // implement selection bar functions functions
-//   Future<void> onColorTap() async {
-//     String? color = await _showColorPickerDialog(context);
-//     if (color != null) {
-//       String? error = await Provider.of<NoteManager>(context, listen: false)
-//           .changeNotesColor(_selectedNotes, color);
-//       afterActionDone(error);
-//     }
-//   }
+    if (color != null && context.mounted) {
+      context.read<NotesBloc>().add(ChangeNotesColor(color));
+    }
+  }
 
-//   void onDeleteTap() async {
-//     String? error = await Provider.of<NoteManager>(context, listen: false).deleteNotes(
-//       _selectedNotes,
-//     );
-//     afterActionDone(error);
-//   }
-
-//   Future<void> onPinTap() async {
-//     String? error = await Provider.of<NoteManager>(context, listen: false).togglePinStatuses(
-//       _selectedNotes,
-//     );
-//     afterActionDone(error);
-//   }
-
-//   void onDuplicateTap() async {
-//     String? error = await Provider.of<NoteManager>(context, listen: false).duplicateNotes(
-//       _selectedNotes,
-//     );
-//     afterActionDone(error);
-//   }
-
-//   void afterActionDone(String? error) {
-//     setState(() {
-//       _selectedNotes.clear();
-//       _isSelection = false;
-//     });
-//     (error == null) ? showPersistentToast("success") : showPersistentToast(error);
-//   }
-// }
-
-// //=================Widgets======================
-// void _showLogoutDialog(BuildContext context) {
-//   showDialog(
-//     context: context,
-//     builder: (context) {
-//       return AlertDialog(
-//         title: const Text('Logout Confirmation'),
-//         content: const Text('Are you sure you want to log out?'),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(context),
-//             child: const Text('Cancel'),
-//           ),
-//           TextButton(
-//             onPressed: () async {
-//               AppAuthManager authMananger = context.read<AppAuthManager>();
-//               await authMananger.signOut();
-//               // Navigator.of(context).pushAndRemoveUntil(
-//               //   MaterialPageRoute(builder: (context) => AuthPage()),
-//               //   (Route<dynamic> route) => false,
-//               // );
-//               if(!context.mounted) return;
-//               context.go('/auth/login'); // Go to login
-//             },
-//             child: const Text('Logout'),
-//           ),
-//         ],
-//       );
-//     },
-//   );
-// }
-
-// Future<dynamic> _showColorPickerDialog(BuildContext context) async {
-//   return showDialog(
-//     context: context,
-//     barrierDismissible: true, // Allow dismissal by tapping outside
-//     builder: (context) {
-//       return Dialog(
-//         // Use Dialog instead of AlertDialog
-//         backgroundColor: Colors.transparent, // Make background transparent
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             NoteColorPicker(
-//               initialColor: Colors.transparent,
-//               onColorChanged: (colorHex) {
-//                 Navigator.of(context).pop(colorHex);
-//               },
-//               isGridView: true,
-//             ),
-//           ],
-//         ),
-//       );
-//     },
-//   );
-// }
-
-// Widget _buildErrorBox(context, NoteManager noteManager, String errorMsg) {
-//   return Center(
-//     child: Column(
-//       mainAxisAlignment: MainAxisAlignment.center,
-//       children: [
-//         Text(
-//           errorMsg,
-//           style: const TextStyle(color: Colors.white70),
-//         ),
-//         const SizedBox(height: 16),
-//         AuthButton(
-//           text: 'Retry',
-//           onButtonPress: () async {
-//             try {
-//               await noteManager.refreshNotes();
-//             } catch (e) {
-//               if (context.mounted) {
-//                 Utils.showSnackBar(context, 'Error: ${e.toString()}');
-//               }
-//             }
-//           },
-//           isStretched: false,
-//         ),
-//       ],
-//     ),
-//   );
-// }
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Logout Confirmation'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                //go_router redirects
+                context.read<AuthenticationBloc>().add(SignOutUser());
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

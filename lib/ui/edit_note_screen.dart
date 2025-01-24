@@ -1,8 +1,11 @@
-import 'package:firenote_2/notes_manager.dart';
+import 'package:firenote_2/state/notes_bloc.dart';
+import 'package:firenote_2/state/notes_event.dart';
+import 'package:firenote_2/state/notes_state.dart';
 import 'package:firenote_2/ui/widgets/note_color_picker.dart';
 import 'package:firenote_2/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../data/note.dart';
 
 class EditNoteScreen extends StatefulWidget {
@@ -15,7 +18,7 @@ class EditNoteScreen extends StatefulWidget {
 }
 
 class _EditNoteScreenState extends State<EditNoteScreen> {
-  Note note = Note();
+  Note currentNote = Note();
   bool _isEdit = false;
   bool _pinStatus = false;
   Color _noteColor = hexToColor('#00FFFFFF');
@@ -27,15 +30,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   @override
   void initState() {
     super.initState();
+    //reset state
+    context.read<NotesBloc>().add(ResetNotesActionState());
+    //initialize new note or populate passed Note
     _isEdit = widget.note != null;
     if (_isEdit) {
-      //store initial note for save checks and copy note to
-      //populate screen and hold new values
       _initialNote = widget.note!.copy();
-      note = widget.note!.copy();
-      _populateScreen(note);
+      currentNote = widget.note!.copy();
+      _populateScreen(currentNote);
     } else {
-      note = Note();
+      currentNote = Note();
     }
   }
 
@@ -48,133 +52,141 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //Save or Edit note when user goes back
-    //ask confirmation if save or edit fail
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (didPop) {
-          return;
-        }
-        if (context.mounted) {
-          bool success = await _saveNote(context);
-          if (success) {
-            Navigator.pop(context);
-          } else {
-            bool userExit = await _showFailedSaveDialog(context);
-            if (userExit) {
-              Navigator.pop(context);
-            }
-          }
+    return BlocListener<NotesBloc, NotesState>(
+      listener: (context, state) {
+        //If _handleNoteExit is successful, display message and close
+        //if it fails give user an option to stay or close anyway
+        if (state.noteActionStatus == NoteActionStatus.success) {
+          Utils.showShortToast(_isEdit ? 'note updated' : 'note saved');
+          context.pop();
+        } else if (state.noteActionStatus == NoteActionStatus.failure) {
+          _showFailedSaveDialog(context, state.exception);
         }
       },
-      child: Scaffold(
-        backgroundColor: _noteColor,
-        appBar: AppBar(
+      //back press trigger _handleNoteExit
+      child: PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) async {
+          if (didPop) return;
+          await _handleNoteExit(context);
+        },
+        child: Scaffold(
           backgroundColor: _noteColor,
-          leading: IconButton(
+          appBar: AppBar(
+            backgroundColor: _noteColor,
+            leading: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () async {
-                // handle save/edit or exit
-                bool success = await _saveNote(context);
-                if (success) {
-                  Navigator.pop(context);
-                } else {
-                  bool userExit = await _showFailedSaveDialog(context);
-                  if (userExit) {
-                    Navigator.pop(context);
-                  }
-                }
-              }),
-          actions: [
-            IconButton(
-              onPressed: () => setState(() => _pinStatus = !_pinStatus),
-              icon:
-                  Icon(_pinStatus ? Icons.push_pin : Icons.push_pin_outlined, color: Colors.white),
+              onPressed: () async => await _handleNoteExit(context),
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    // Title TextField
-                    TextField(
-                      controller: _titleController,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Title',
-                        hintStyle: TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                    // Content TextField
-                    Expanded(
-                      child: TextField(
-                        controller: _contentController,
-                        style: TextStyle(color: Colors.white),
+            actions: [
+              IconButton(
+                onPressed: () => setState(() => _pinStatus = !_pinStatus),
+                icon: Icon(_pinStatus ? Icons.push_pin : Icons.push_pin_outlined,
+                    color: Colors.white),
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _titleController,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'What is happening!',
-                          hintStyle: TextStyle(
-                            color: Colors.white38,
-                            fontStyle: FontStyle.italic,
-                          ),
+                          hintText: 'Title',
+                          hintStyle: TextStyle(color: Colors.white38),
                           border: InputBorder.none,
                         ),
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
                       ),
+                      Expanded(
+                        child: TextField(
+                          controller: _contentController,
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'What is happening!',
+                            hintStyle: TextStyle(
+                              color: Colors.white38,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: _noteColor,
+                  border: Border(top: BorderSide(color: Colors.white)),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.palette_outlined, color: Colors.white),
+                      onPressed: () => _showColorPicker(context),
+                    ),
+                    Text(
+                      'Edited ${formatLastEdited(_noteDateTime)}',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.more_vert, color: Colors.white),
+                      onPressed: () {
+                        Utils.showShortToast('feature not implemented');
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-            // Bottom Bar
-            Container(
-              decoration: BoxDecoration(
-                color: _noteColor,
-                border: Border(
-                  top: BorderSide(color: Colors.white),
-                ),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.palette_outlined, color: Colors.white),
-                    onPressed: () {
-                      _showColorPicker(context);
-                    },
-                  ),
-                  Text(
-                    'Edited ${formatLastEdited(_noteDateTime)}',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.more_vert, color: Colors.white),
-                    onPressed: () {
-                      //TODO: implement more features
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  //If editing note populate screen
+  Future<void> _handleNoteExit(BuildContext context) async {
+    // Update note data from controllers
+    currentNote.title = _titleController.text;
+    currentNote.message = _contentController.text;
+    currentNote.color = colorToHex(_noteColor);
+    currentNote.pinStatus = _pinStatus;
+
+    // Skip if message is empty
+    if (currentNote.message.isEmpty) {
+      context.pop();
+      return;
+    }
+
+    // Skip if no changes were made
+    if (_isEdit && !_isNoteChanged()) {
+      context.pop();
+      return;
+    }
+
+    // Save or update note
+    if (_isEdit) {
+      context.read<NotesBloc>().add(UpdateNote(currentNote));
+    } else {
+      context.read<NotesBloc>().add(SaveNote(currentNote));
+    }
+  }
+
   void _populateScreen(Note note) {
     _noteDateTime = parseFormattedDateTime(note.dateTimeString);
     _noteColor = hexToColor(note.color);
@@ -184,7 +196,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     setState(() {});
   }
 
-  //show color picker and pick new Color
   void _showColorPicker(BuildContext context) {
     showModalBottomSheet(
       backgroundColor: _noteColor,
@@ -201,37 +212,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     );
   }
 
-  //save Note
-  Future<bool> _saveNote(BuildContext context) async {
-    // Update note data from controllers
-    note.title = _titleController.text;
-    note.message = _contentController.text;
-    note.color = colorToHex(_noteColor);
-    note.pinStatus = _pinStatus;
-    //skip if messsaage is empty
-    if (note.message.isEmpty) {
-      return true;
-    }
-    //skip if not changes were made
-    if (_isEdit && !_isNoteChanged()) {
-      return true;
-    }
-    //save or update
-    final noteManager = context.read<NoteManager>();
-    String? error;
-    String success = "";
-    if (_isEdit) {
-      error = await noteManager.updateNote(note);
-      success = "note updated";
-    } else {
-      error = await noteManager.saveNote(note);
-      success = "note saved";
-    }
-    error != null ? Utils.showPersistentToast('error: $error') : Utils.showPersistentToast(success);
-    return error == null;
-  }
-
-  //Determine if note has changed since this screen was open
   bool _isNoteChanged() {
     return _initialNote!.title != _titleController.text ||
         _initialNote!.message != _contentController.text ||
@@ -239,46 +219,22 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         _initialNote!.pinStatus != _pinStatus;
   }
 
-  Future<bool> _showFailedSaveDialog(BuildContext context) {
-    return showDialog<bool>(
+  Future<void> _showFailedSaveDialog(BuildContext context, Exception? exception) {
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: Text(''),
-          content: SingleChildScrollView(
-            child: Text(_isEdit ? "edit failed" : 'save failed'),
-          ),
+          title: Text(_isEdit ? 'update failed' : 'save sailed'),
+          content: Text(exception?.toString() ?? 'unknown error occurred'),
           actions: [
             TextButton(
-              child: const Text('cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            ),
-            TextButton(
-              child: const Text('exit anyway'),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
+              child: const Text('ok'),
+              onPressed: () => context.pop(),
             ),
           ],
         );
       },
-    ).then((value) => value ?? false);
+    );
   }
-
-  // void _handleExit(BuildContext context) async {
-  //   if (mounted) {
-  //     bool success = await _saveNote(context);
-  //     if (success) {
-  //       Navigator.pop(context);
-  //     } else {
-  //       if (!mounted) {
-  //         bool exit = await _showFailedSaveDialog(context);
-  //         if (exit) Navigator.pop(context);
-  //       }
-  //     }
-  //   }
-  // }
 }

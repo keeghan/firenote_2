@@ -12,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/note.dart';
-import 'ui/notes_screen_2.dart';
+import 'ui/notes_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,8 +57,6 @@ final router = GoRouter(
   debugLogDiagnostics: true,
   redirect: (BuildContext context, GoRouterState state) {
     final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    print('Current user: ${FirebaseAuth.instance.currentUser}'); // Debug print
-    print('Is Logged In: $isLoggedIn');
     final bool isAuthRoute = state.uri.toString().startsWith('/auth');
     if (!isLoggedIn && !isAuthRoute) {
       return '/auth/signin';
@@ -90,7 +88,7 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/notes',
-      builder: (context, state) => const NotesScreen2(),
+      builder: (context, state) => const NotesScreen(),
       routes: [
         GoRoute(
           path: 'edit',

@@ -137,7 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         listener: (BuildContext context, state) {
           //login redirected using go_router
           if (state is AuthenticationFailureState) {
-            Utils.showSnackBar(context, state.errorMessage);
+            Utils.showShortToast(state.errorMessage);
           }
         },
       ),

@@ -43,13 +43,18 @@ class ChangeNotesColor extends NotesEvent {
 }
 
 class SaveNote extends NotesEvent {
-  final Note note;
-  final bool isNewNote;
-  SaveNote(this.note, {this.isNewNote = false});
+  final Note newNote;
+  SaveNote(this.newNote);
+
+  @override
+  List<Object> get props => [newNote];
 }
 
 //EditScreen actions
 class UpdateNote extends NotesEvent {
-  final List<Note> notes;
-  UpdateNote(this.notes);
+  final Note upDatedNote;
+  UpdateNote(this.upDatedNote);
+
+  @override
+  List<Object> get props => [upDatedNote];
 }
