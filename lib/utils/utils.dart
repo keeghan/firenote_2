@@ -66,13 +66,6 @@ Color hexToColor(String hex) {
   return Color(int.parse('0x$hex'));
 }
 
-String colorToHex(Color color) {
-  // ignore: deprecated_member_use
-  String hex = color.value.toRadixString(16).toUpperCase();
-  hex = hex.padLeft(8, '0');
-  if (hex.startsWith('FF')) return '#${hex.substring(2)}';
-  return '#$hex';
-}
 
 //Format DateTime String to match native(Firenote App)
 String getFormattedDateTime() {

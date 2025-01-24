@@ -21,7 +21,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   Note currentNote = Note();
   bool _isEdit = false;
   bool _pinStatus = false;
-  Color _noteColor = hexToColor('#00FFFFFF');
   DateTime _noteDateTime = DateTime.now();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
@@ -40,6 +39,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _populateScreen(currentNote);
     } else {
       currentNote = Note();
+      currentNote.color = "#00FFFFFF";
     }
   }
 
@@ -71,9 +71,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           await _handleNoteExit(context);
         },
         child: Scaffold(
-          backgroundColor: _noteColor,
+          backgroundColor: hexToColor(currentNote.color),
           appBar: AppBar(
-            backgroundColor: _noteColor,
+            backgroundColor: hexToColor(currentNote.color),
             leading: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async => await _handleNoteExit(context),
@@ -97,7 +97,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         controller: _titleController,
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
@@ -129,7 +129,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: _noteColor,
+                  color: hexToColor(currentNote.color),
                   border: Border(top: BorderSide(color: Colors.white)),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -164,7 +164,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     // Update note data from controllers
     currentNote.title = _titleController.text;
     currentNote.message = _contentController.text;
-    currentNote.color = colorToHex(_noteColor);
+    //use original noteColor String or one set in _showColorPicker
     currentNote.pinStatus = _pinStatus;
 
     // Skip if message is empty
@@ -189,7 +189,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   void _populateScreen(Note note) {
     _noteDateTime = parseFormattedDateTime(note.dateTimeString);
-    _noteColor = hexToColor(note.color);
     _titleController.text = note.title;
     _contentController.text = note.message;
     _pinStatus = note.pinStatus;
@@ -198,13 +197,13 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   void _showColorPicker(BuildContext context) {
     showModalBottomSheet(
-      backgroundColor: _noteColor,
+      backgroundColor: hexToColor(currentNote.color),
       context: context,
       builder: (context) {
         return NoteColorPicker(
-          initialColor: _noteColor,
+          initialColor: hexToColor(currentNote.color),
           onColorChanged: (colorHex) {
-            setState(() => _noteColor = hexToColor(colorHex));
+            setState(() => currentNote.color = colorHex);
           },
           isGridView: false,
         );
@@ -215,7 +214,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   bool _isNoteChanged() {
     return _initialNote!.title != _titleController.text ||
         _initialNote!.message != _contentController.text ||
-        _initialNote!.color != colorToHex(_noteColor) ||
+        _initialNote!.color != currentNote.color ||
         _initialNote!.pinStatus != _pinStatus;
   }
 
