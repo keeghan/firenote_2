@@ -38,29 +38,60 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       body: BlocConsumer<AuthenticationBloc, AuthenticationState>(
         builder: (context, authState) {
-          return Stack(
-            children: [
-              SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
+          return SafeArea(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.all(size.width * 0.06),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Create An Account',
+                        SizedBox(height: size.height * 0.03),
+
+                        // Back button
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          padding: EdgeInsets.zero,
+                          alignment: Alignment.centerLeft,
+                          iconSize: size.width * 0.07,
+                        ),
+
+                        SizedBox(height: size.height * 0.03),
+
+                        // Title
+                        Text(
+                          'Join Us\nToday',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w500,
+                            fontSize: size.width * 0.08,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                        ),
+
+                        SizedBox(height: size.height * 0.015),
+
+                        // Subtitle
+                        Text(
+                          'Create an account to start writing and securing your notes.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: size.width * 0.04,
+                            height: 1.5,
                           ),
                         ),
 
                         // Email
-                        const SizedBox(height: 32),
+                        SizedBox(height: size.height * 0.05),
                         AuthTextField(
                           textEditingController: _emailController,
                           hintText: "Email",
@@ -69,7 +100,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
 
                         // Password
-                        const SizedBox(height: 16),
+                        SizedBox(height: size.height * 0.01),
                         AuthPasswordField(
                           textEditingController: _passwordController,
                           hintText: 'Enter password',
@@ -82,7 +113,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
 
                         // Password Confirmation
-                        const SizedBox(height: 16),
+                        SizedBox(height: size.height * 0.01),
                         AuthPasswordField(
                           textEditingController: _confirmationController,
                           hintText: 'Confirm password',
@@ -94,7 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: size.height * 0.02),
                         AuthButton(
                           text: 'SIGN UP',
                           onButtonPress: () {
@@ -113,25 +144,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
 
                         // Sign In Button
-                        const SizedBox(height: 24),
-                        AuthTextButton(
+                        SizedBox(height: size.height * 0.02),
+                        authTextButton(
+                          color: primary,
+                          size: size,
                           onButtonPress: () => context.pop(),
-                          text: "Already Have an Account?",
+                          text: "Already Have an Account? Sign In",
                         ),
+
+                        SizedBox(height: size.height * 0.05),
                       ],
                     ),
                   ),
                 ),
-              ),
-              //Cover screen with circularLoading icon
-              if (authState is AuthenticationLoadingState)
-                Positioned(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    child: Center(child: CircularProgressIndicator()),
+                //Cover screen with circularLoading icon
+                if (authState is AuthenticationLoadingState)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           );
         },
         listener: (BuildContext context, state) {

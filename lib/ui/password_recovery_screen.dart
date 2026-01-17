@@ -27,6 +27,8 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+
     return Scaffold(
       body: BlocConsumer<AuthenticationBloc, AuthenticationState>(
         builder: (context, authState) {
@@ -35,12 +37,12 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
               children: [
                 SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: EdgeInsets.all(size.width * 0.06),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 60),
+                        SizedBox(height: size.height * 0.03),
 
                         // Back button
                         IconButton(
@@ -48,35 +50,36 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
                           padding: EdgeInsets.zero,
                           alignment: Alignment.centerLeft,
+                          iconSize: size.width * 0.07,
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: size.height * 0.03),
 
                         // Title
-                        const Text(
+                        Text(
                           'Recover Your\nPassword',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 32,
+                            fontSize: size.width * 0.08,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        SizedBox(height: size.height * 0.015),
 
                         // Subtitle
                         Text(
                           'Enter your email address and we\'ll send you a link to reset your password.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 16,
+                            fontSize: size.width * 0.04,
                             height: 1.5,
                           ),
                         ),
 
                         // Email field
-                        const SizedBox(height: 40),
+                        SizedBox(height: size.height * 0.05),
                         AuthTextField(
                           textEditingController: _emailController,
                           hintText: "Email",
@@ -85,7 +88,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                         ),
 
                         // Send button
-                        const SizedBox(height: 24),
+                        SizedBox(height: size.height * 0.03),
                         AuthButton(
                           text: 'SEND RECOVERY EMAIL',
                           onButtonPress: () {
@@ -100,9 +103,9 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                         ),
 
                         // Spam notice
-                        const SizedBox(height: 24),
+                        SizedBox(height: size.height * 0.03),
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(size.width * 0.04),
                           decoration: BoxDecoration(
                             color: Colors.orange.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
@@ -117,15 +120,15 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                               Icon(
                                 Icons.info_outline,
                                 color: Colors.orange.shade300,
-                                size: 20,
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: size.width * 0.03),
                               Expanded(
                                 child: Text(
                                   'Check your spam folder if you don\'t see the recovery email in your inbox within a few minutes.',
                                   style: TextStyle(
                                     color: Colors.orange.shade100,
-                                    fontSize: 14,
+                                    fontSize: size.width * 0.035,
                                     height: 1.4,
                                   ),
                                 ),
@@ -134,7 +137,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: size.height * 0.05),
                       ],
                     ),
                   ),
