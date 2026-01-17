@@ -46,19 +46,16 @@ class AuthService {
 
   ///signOutUser
   Future<void> signOutUser() async {
-    final User? firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser != null) {
-      await FirebaseAuth.instance.signOut();
-    }
+    final User? firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser != null) await _firebaseAuth.signOut();
   }
 
   Future<void> recoverPassword(String email) async {
-    final instance = FirebaseAuth.instance;
-    instance.sendPasswordResetEmail(email: email);
+    await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
   }
 
   Future<UserModel?> getCurrentUser() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _firebaseAuth.currentUser;
     if (user != null) {
       return UserModel(
         id: user.uid,

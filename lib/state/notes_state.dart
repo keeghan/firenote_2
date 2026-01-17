@@ -28,13 +28,13 @@ final class NotesState {
     bool? isMultiSelectionMode,
     bool? isGridView,
     NoteStatus? noteStatus,
-    NoteActionStatus? noteActionStatus,
+    NoteActionStatus? noteActStatus,
     List<Note>? notes,
     Set<Note>? selectedNotes,
     Exception? exception,
   }) {
     return NotesState(
-      noteActionStatus: noteActionStatus ?? this.noteActionStatus,
+      noteActionStatus: noteActStatus ?? this.noteActionStatus,
       isMultiSelectionMode: isMultiSelectionMode ?? this.isMultiSelectionMode,
       isGridView: isGridView ?? this.isGridView,
       noteStatus: noteStatus ?? this.noteStatus,

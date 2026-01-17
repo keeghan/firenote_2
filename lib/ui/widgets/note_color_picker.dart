@@ -62,9 +62,11 @@ class _NoteColorPickerState extends State<NoteColorPicker> {
             color: (widget.isGridView && colorHex == NoteColors.transparent)
                 ? Colors.transparent
                 : color,
-            border: (widget.isGridView && colorHex == NoteColors.transparent)
-                ? Border.all(color: Colors.grey[800]!, width: 2)
-                : null,
+            border: widget.isGridView
+                ? (colorHex == NoteColors.transparent
+                    ? Border.all(color: Colors.grey[800]!, width: 2)
+                    : null)
+                : Border.all(color: Colors.white, width: 2),
           ),
         ),
       );

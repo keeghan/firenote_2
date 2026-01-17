@@ -5,6 +5,7 @@ class Note {
   String color;
   bool pinStatus;
   String dateTimeString;
+  bool isEncrypted; // Flag to track if this note is encrypted
 
   Note({
     this.id = '',
@@ -13,6 +14,7 @@ class Note {
     this.color = 'transparent',
     this.pinStatus = false,
     this.dateTimeString = '',
+    this.isEncrypted = false, // Default to false for backward compatibility
   });
 
   // Convert Note to Map for Firebase
@@ -24,6 +26,7 @@ class Note {
       'color': color,
       'pinStatus': pinStatus,
       'dateTimeString': dateTimeString,
+      'isEncrypted': isEncrypted,
     };
   }
 
@@ -36,6 +39,7 @@ class Note {
       color: map['color'] ?? 'transparent',
       pinStatus: map['pinStatus'] ?? false,
       dateTimeString: map['dateTimeString'] ?? '',
+      isEncrypted: map['isEncrypted'] ?? false, // Default to false for old notes
     );
   }
 
@@ -48,6 +52,7 @@ class Note {
       color: color,
       pinStatus: pinStatus,
       dateTimeString: dateTimeString,
+      isEncrypted: isEncrypted,
     );
   }
 

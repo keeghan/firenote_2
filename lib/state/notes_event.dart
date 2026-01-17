@@ -58,3 +58,5 @@ class UpdateNote extends NotesEvent {
   @override
   List<Object> get props => [upDatedNote];
 }
+
+class CleanupNotes extends NotesEvent {}

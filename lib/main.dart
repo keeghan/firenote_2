@@ -20,7 +20,12 @@ void main() async {
   final authBloc = AuthenticationBloc();
   final notesBloc = NotesBloc();
   //force go router to referesh on authchanges
-   FirebaseAuth.instance.authStateChanges().listen((User? user) {
+  FirebaseAuth.instance.authStateChanges().listen((User? user) async {
+    if (user != null) {
+      await user.getIdToken(true);
+      // Small delay to ensure token propagation to database
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
     router.refresh();
   });
   runApp(MyApp(authBloc: authBloc, notesBloc: notesBloc));

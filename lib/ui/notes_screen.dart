@@ -157,7 +157,9 @@ class NotesScreen extends StatelessWidget {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                //go_router redirects
+                // Cleanup notes subscription before signing out
+                context.read<NotesBloc>().add(CleanupNotes());
+                // go_router redirects
                 context.read<AuthenticationBloc>().add(SignOutUser());
               },
               child: const Text('Logout'),
