@@ -6,6 +6,7 @@ import 'package:firenote_2/data/note.dart';
 import 'package:firenote_2/state/notes_event.dart';
 import 'package:firenote_2/state/notes_state.dart';
 import 'package:firenote_2/utils/utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -38,48 +39,44 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     on<SaveNote>(_onSaveNote);
     on<CleanupNotes>(_onCleanup);
     on<ResetNotesActionState>((event, emit) {
-      emit(state.copyWith( exception: null,  noteActStatus: NoteActionStatus.none));
+      emit(state.copyWith(
+          exception: null, noteActStatus: NoteActionStatus.none));
     });
-
-    // Initialize when created
-    add(InitializeNotes());
   }
 
   Future<void> _onInitialize(
       InitializeNotes event, Emitter<NotesState> emit) async {
     emit(state.copyWith(noteStatus: NoteStatus.loading));
     try {
-      final isGridView = await PreferencesService.getIsGridView(); // Get saved preference
-      emit(state.copyWith( isGridView: isGridView, noteStatus: NoteStatus.loading));
+      final isGridView = await PreferencesService.getIsGridView();
+      emit(state.copyWith(
+          isGridView: isGridView, noteStatus: NoteStatus.loading));
       add(LoadNotes());
     } catch (e) {
-      emit(state.copyWith(noteStatus: NoteStatus.failure, exception: e as Exception));
+      emit(state.copyWith(
+          noteStatus: NoteStatus.failure, exception: e as Exception));
     }
+  }
+
+  /// Validates user authentication and returns the user ID
+  /// Throws an Exception if user is not authenticated
+  String _getAuthenticatedUserId() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+    return userId;
   }
 
   //Check internet first
   Future<void> _setupNoteRef() async {
-    final userId = _auth.currentUser?.uid;
-    if (userId != null) {
-      _noteRef = _database.ref(userId);
-    } else {
-      throw Exception('User not authenticated');
-    }
+    final userId = _getAuthenticatedUserId();
+    _noteRef = _database.ref(userId);
   }
 
   Future<void> _onLoadNotes(LoadNotes event, Emitter<NotesState> emit) async {
     emit(state.copyWith(noteStatus: NoteStatus.loading));
     try {
-      // Check if user is authenticated first
-      if (_auth.currentUser == null) {
-        emit(state.copyWith(
-          exception: Exception("User not authenticated"),
-          noteStatus: NoteStatus.failure,
-          notes: null,
-        ));
-        return;
-      }
-
       await _setupNoteRef();
       await _notesSubscription?.cancel();
 
@@ -94,59 +91,44 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       await emit.forEach(
         noteStream,
         onData: (event) {
-          try {
-            final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
-            if (data == null) {
-              emit(state.copyWith(
-                exception: Exception("No notes"),
-                noteStatus: NoteStatus.failure,
-                notes: null,
-              ));
-              return state;
-            }
-
-            final notes = data.values
-                .map((value) => Note.fromMap(Map<String, dynamic>.from(value)))
-                .toList();
-
-            // Decrypt encrypted notes
-            final userId = _auth.currentUser?.uid ?? '';
-            for (var note in notes) {
-              if (note.isEncrypted && userId.isNotEmpty) {
-                try {
-                  final decrypted = EncryptionService.decryptNoteContent(
-                    encryptedTitle: note.title,
-                    encryptedMessage: note.message,
-                    userId: userId,
-                  );
-                  note.title = decrypted['title']!;
-                  note.message = decrypted['message']!;
-                } catch (e) {
-                  // If decryption fails, leave the note as is (might be corrupted)
-                  print('Failed to decrypt note ${note.id}: $e');
-                }
-              }
-            }
-
-            notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
-
-            emit(state.copyWith(noteStatus: NoteStatus.success, notes: notes));
-          } catch (e) {
+          final Map<dynamic, dynamic>? data = event.snapshot.value as Map?;
+          if (data == null) {
             emit(state.copyWith(
-              exception: Exception(e.toString()),
+              exception: Exception("No notes"),
               noteStatus: NoteStatus.failure,
               notes: null,
             ));
+            return state;
           }
+
+          final notes = data.values
+              .map((value) => Note.fromMap(Map<String, dynamic>.from(value)))
+              .toList();
+
+          // Decrypt encrypted notes
+          final userId = _getAuthenticatedUserId();
+          for (var note in notes) {
+            if (note.isEncrypted) {
+              try {
+                final decrypted = EncryptionService.decryptNoteContent(
+                  encryptedTitle: note.title,
+                  encryptedMessage: note.message,
+                  userId: userId,
+                );
+                note.title = decrypted['title']!;
+                note.message = decrypted['message']!;
+              } catch (e) {
+                // If decryption fails, leave the note as is (might be corrupted)
+                debugPrint('Failed to decrypt note ${note.id}: $e');
+              }
+            }
+          }
+          notes.sort((a, b) => b.dateTimeString.compareTo(a.dateTimeString));
+          emit(state.copyWith(noteStatus: NoteStatus.success, notes: notes));
           return state;
         },
         onError: (error, stackTrace) {
-          emit(state.copyWith(
-            exception: Exception(error.toString()),
-            noteStatus: NoteStatus.failure,
-            notes: null,
-          ));
-          return state;
+          throw Exception(error.toString());
         },
       );
     } catch (e) {
@@ -196,10 +178,8 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
   Future<void> _onToggleNotesPin(
       ToggleNotesPin event, Emitter<NotesState> emit) async {
     try {
-      final toggleActions = state.selectedNotes.map(
-        (note) =>
-            _noteRef!.child(note.id).update({'pinStatus': !note.pinStatus}),
-      );
+      final toggleActions = state.selectedNotes.map((note) =>
+          _noteRef!.child(note.id).update({'pinStatus': !note.pinStatus}));
       await Future.wait(toggleActions);
       emit(state.copyWith(
           noteStatus: NoteStatus.success,
@@ -233,8 +213,9 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       ..add(event.pressedNote);
     emit(state.copyWith(
         isMultiSelectionMode: true, selectedNotes: updatedSelection));
-    if (state.selectedNotes.length > 1)
+    if (state.selectedNotes.length > 1) {
       throw "Selection Error: not first selection";
+    }
   }
 
   //if note selected Note remove, otherwise add
@@ -302,17 +283,15 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           'note_${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
 
       // Encrypt new notes
-      final userId = _auth.currentUser?.uid ?? '';
-      if (userId.isNotEmpty) {
-        final encrypted = EncryptionService.encryptNoteContent(
-          title: event.newNote.title,
-          message: event.newNote.message,
-          userId: userId,
-        );
-        event.newNote.title = encrypted['title']!;
-        event.newNote.message = encrypted['message']!;
-        event.newNote.isEncrypted = true;
-      }
+      final userId = _getAuthenticatedUserId();
+      final encrypted = EncryptionService.encryptNoteContent(
+        title: event.newNote.title,
+        message: event.newNote.message,
+        userId: userId,
+      );
+      event.newNote.title = encrypted['title']!;
+      event.newNote.message = encrypted['message']!;
+      event.newNote.isEncrypted = true;
 
       await _noteRef?.child(event.newNote.id).set(event.newNote.toMap());
       emit(state.copyWith(noteActStatus: NoteActionStatus.success));
@@ -331,21 +310,15 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     final note = event.upDatedNote;
     try {
       // Encrypt the updated content if it's a new note or re-encrypt if already encrypted
-      final userId = _auth.currentUser?.uid ?? '';
-      String titleToSave = note.title;
-      String messageToSave = note.message;
-      bool isEncrypted = note.isEncrypted;
-
-      if (userId.isNotEmpty) {
-        final encrypted = EncryptionService.encryptNoteContent(
-          title: note.title,
-          message: note.message,
-          userId: userId,
-        );
-        titleToSave = encrypted['title']!;
-        messageToSave = encrypted['message']!;
-        isEncrypted = true;
-      }
+      final userId = _getAuthenticatedUserId();
+      final encrypted = EncryptionService.encryptNoteContent(
+        title: note.title,
+        message: note.message,
+        userId: userId,
+      );
+      final titleToSave = encrypted['title']!;
+      final messageToSave = encrypted['message']!;
+      const isEncrypted = true;
 
       final noteObject = {
         'color': note.color,

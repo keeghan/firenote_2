@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firenote_2/firebase_options.dart';
 import 'package:firenote_2/state/authentication_bloc.dart';
 import 'package:firenote_2/state/notes_bloc.dart';
+import 'package:firenote_2/state/notes_event.dart';
 import 'package:firenote_2/ui/edit_note_screen.dart';
 import 'package:firenote_2/ui/password_recovery_screen.dart';
 import 'package:firenote_2/ui/sign_in_screen.dart';
@@ -23,8 +24,11 @@ void main() async {
   FirebaseAuth.instance.authStateChanges().listen((User? user) async {
     if (user != null) {
       await user.getIdToken(true);
-      // Small delay to ensure token propagation to database
+      // Important: small delay allows RTDB socket to re-auth
       await Future.delayed(const Duration(milliseconds: 500));
+      notesBloc.add(InitializeNotes());
+    }else{
+      notesBloc.add(CleanupNotes());
     }
     router.refresh();
   });

@@ -28,7 +28,9 @@ class AuthPasswordField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         errorText: errorText,
+        helperText: errorText == null ? ' ' : null,
         errorStyle: const TextStyle(color: Colors.redAccent),
+        helperStyle: const TextStyle(color: Colors.transparent),
         hintStyle: const TextStyle(color: Colors.white70),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

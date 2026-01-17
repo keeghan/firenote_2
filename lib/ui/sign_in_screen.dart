@@ -79,7 +79,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
 
                         // SignIn Button
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         AuthButton(
                           text: 'SIGN IN',
                           onButtonPress: () {
@@ -96,7 +96,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
 
                         // SignUp Button
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         AuthTextButton(
                           onButtonPress: () {
                             //reset error state
