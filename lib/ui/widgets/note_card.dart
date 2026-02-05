@@ -30,6 +30,7 @@ class NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     Color cardColor = hexToColor(note.color);
     bool isTransparent = note.color == NoteColors.transparent;
+    final textColor = noteTextColor(note.color, Theme.of(context).brightness);
     Color borderColor;
     //blue border when selected otherwise grey or note's color
     borderColor = isSelected
@@ -61,6 +62,7 @@ class NoteCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 maxLines: 6,
                 note.message,
+                style: TextStyle(color: textColor),
               ),
               if (urls.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -72,14 +74,14 @@ class NoteCard extends StatelessWidget {
                     border: Border.all(
                       color: Colors.grey.withValues(alpha: 0.5),
                       width: 1,
-                    ),  
+                    ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.link,
                         size: 16,
-                        color: Colors.grey[700],
+                        color: textColor.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -87,7 +89,7 @@ class NoteCard extends StatelessWidget {
                           urls.first,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white,
+                            color: textColor,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -98,7 +100,7 @@ class NoteCard extends StatelessWidget {
                           ' +${urls.length - 1}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: textColor.withValues(alpha: 0.6),
                           ),
                         ),
                     ],

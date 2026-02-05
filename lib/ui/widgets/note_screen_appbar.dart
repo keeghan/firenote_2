@@ -1,6 +1,8 @@
 import 'package:firenote_2/state/authentication_bloc.dart';
 import 'package:firenote_2/state/authentication_state.dart';
-import 'package:firenote_2/utils/fire_note_colors.dart';
+import 'package:firenote_2/state/notes_bloc.dart';
+import 'package:firenote_2/state/notes_event.dart';
+import 'package:firenote_2/state/theme_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,19 +17,19 @@ PreferredSizeWidget buildSelectionBar(
 ) {
   return AppBar(
     key: const ValueKey('selectionBar'),
-    backgroundColor: appBarColor,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     leading: Container(
       alignment: Alignment.center,
       child: Row(
         children: [
           IconButton(
             onPressed: onCancelTap,
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close),
           ),
           Text(
             '$selectedCount',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -38,27 +40,27 @@ PreferredSizeWidget buildSelectionBar(
     leadingWidth: 100,
     actions: [
       IconButton(
-        icon: const Icon(Icons.palette_outlined, color: Colors.white),
+        icon: const Icon(Icons.palette_outlined),
         onPressed: onColorTap,
         tooltip: 'Change color',
       ),
       IconButton(
-        icon: const Icon(Icons.push_pin_outlined, color: Colors.white),
+        icon: const Icon(Icons.push_pin_outlined),
         onPressed: onPinTap,
         tooltip: 'Pin note',
       ),
       IconButton(
-        icon: const Icon(Icons.delete_outline, color: Colors.white),
+        icon: const Icon(Icons.delete_outline),
         onPressed: onDeleteTap,
         tooltip: 'Delete',
       ),
       IconButton(
-        icon: const Icon(Icons.control_point_duplicate, color: Colors.white),
+        icon: const Icon(Icons.control_point_duplicate),
         onPressed: onDuplicateTap,
         tooltip: 'Duplicate',
       ),
       IconButton(
-        icon: const Icon(Icons.more_vert, color: Colors.white),
+        icon: const Icon(Icons.more_vert),
         onPressed: () {
           // Show more options menu
         },
@@ -107,12 +109,12 @@ PreferredSizeWidget buildSelectionBar(
 PreferredSizeWidget buildDefaultNoteBar(
   bool isGridView,
   Function toggleGridView,
-  VoidCallback showLogoutDialog,
+  VoidCallback onLogout,
 ) {
   return AppBar(
-    backgroundColor: appBarColor,
+    backgroundColor: Colors.transparent,
     leading: IconButton(
-      icon: const Icon(Icons.menu, color: Colors.white),
+      icon: const Icon(Icons.menu),
       onPressed: () {},
     ),
     title: const NotesSearchBar(),
@@ -120,15 +122,13 @@ PreferredSizeWidget buildDefaultNoteBar(
       IconButton(
         icon: Icon(
           isGridView ? Icons.view_agenda : Icons.grid_view,
-          color: Colors.white,
         ),
         onPressed: () {
           toggleGridView();
         },
         tooltip: isGridView ? 'Switch to list view' : 'Switch to grid view',
       ),
-      //Show User Icon
-      BlocConsumer<AuthenticationBloc, AuthenticationState>(
+      BlocBuilder<AuthenticationBloc, AuthenticationState>(
         builder: (context, authState) {
           if (authState is AuthenticationSuccessState) {
             String initial = '';
@@ -138,8 +138,40 @@ PreferredSizeWidget buildDefaultNoteBar(
               initial = authState.user.email![0];
             }
 
-            return InkWell(
-              onTap: showLogoutDialog,
+            return PopupMenuButton<String>(
+              offset: const Offset(0, 48),
+              onSelected: (value) {
+                if (value == 'logout') {
+                  onLogout();
+                } else if (value == 'theme') {
+                  context.read<ThemeCubit>().toggleTheme();
+                }
+              },
+              itemBuilder: (context) {
+                final isDark = context.read<ThemeCubit>().state == ThemeMode.dark;
+                return [
+                  PopupMenuItem<String>(
+                    value: 'theme',
+                    child: Row(
+                      children: [
+                        Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+                        const SizedBox(width: 12),
+                        Text(isDark ? 'Light mode' : 'Dark mode'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Text('Logout'),
+                      ],
+                    ),
+                  ),
+                ];
+              },
               child: CircleAvatar(
                 backgroundColor: const Color(0xFF00B894),
                 child: Text(
@@ -152,31 +184,65 @@ PreferredSizeWidget buildDefaultNoteBar(
             return const SizedBox.shrink();
           }
         },
-        listener: (context, authState) {},
       ),
       const SizedBox(width: 8),
     ],
   );
 }
 
-class NotesSearchBar extends StatelessWidget {
+class NotesSearchBar extends StatefulWidget {
   const NotesSearchBar({super.key});
 
   @override
+  State<NotesSearchBar> createState() => _NotesSearchBarState();
+}
+
+class _NotesSearchBarState extends State<NotesSearchBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      context.read<NotesBloc>().add(SearchNotes(_controller.text));
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final searchQuery = context.select<NotesBloc, String>(
+      (bloc) => bloc.state.searchQuery,
+    );
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
+        color: isDark ? const Color(0xFF2D2D2D) : Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const TextField(
-        style: TextStyle(color: Colors.white),
+      child: TextField(
+        controller: _controller,
+        style: TextStyle(color: theme.colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: 'Search your notes',
-          hintStyle: TextStyle(color: Colors.grey),
+          hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          suffixIcon: searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.close, color: theme.colorScheme.onSurface.withValues(alpha: 0.5), size: 20),
+                  onPressed: () => _controller.clear(),
+                )
+              : null,
         ),
       ),
     );

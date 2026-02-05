@@ -66,95 +66,105 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       //back press trigger _handleNoteExit
       child: PopScope(
         canPop: false,
-        onPopInvoked: (didPop) async {
+        onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
           await _handleNoteExit(context);
         },
-        child: Scaffold(
-          backgroundColor: hexToColor(currentNote.color),
-          appBar: AppBar(
-            backgroundColor: hexToColor(currentNote.color),
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () async => await _handleNoteExit(context),
-            ),
-            actions: [
-              IconButton(
-                onPressed: () => setState(() => _pinStatus = !_pinStatus),
-                icon: Icon(_pinStatus ? Icons.push_pin : Icons.push_pin_outlined,
-                    color: Colors.white),
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _titleController,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Title',
-                          hintStyle: TextStyle(color: Colors.white38),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _contentController,
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'What is happening!',
-                            hintStyle: TextStyle(
-                              color: Colors.white38,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            border: InputBorder.none,
-                          ),
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                        ),
-                      ),
-                    ],
+        child: Builder(
+          builder: (context) {
+            final isTransparent = currentNote.color == NoteColors.transparent;
+            final bgColor = isTransparent
+                ? Theme.of(context).colorScheme.surface
+                : hexToColor(currentNote.color);
+            final textColor = noteTextColor(currentNote.color, Theme.of(context).brightness);
+            final hintColor = noteHintColor(currentNote.color, Theme.of(context).brightness);
+            return Scaffold(
+              backgroundColor: bgColor,
+              appBar: AppBar(
+                backgroundColor: bgColor,
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back, color: textColor),
+                  onPressed: () async => await _handleNoteExit(context),
+                ),
+                actions: [
+                  IconButton(
+                    onPressed: () => setState(() => _pinStatus = !_pinStatus),
+                    icon: Icon(_pinStatus ? Icons.push_pin : Icons.push_pin_outlined,
+                        color: textColor),
                   ),
-                ),
+                ],
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: hexToColor(currentNote.color),
-                  border: Border(top: BorderSide(color: Colors.white)),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.palette_outlined, color: Colors.white),
-                      onPressed: () => _showColorPicker(context),
+              body: Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _titleController,
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: 0.7),
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Title',
+                              hintStyle: TextStyle(color: hintColor),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _contentController,
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
+                                hintText: 'What is happening!',
+                                hintStyle: TextStyle(
+                                  color: hintColor,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                border: InputBorder.none,
+                              ),
+                              maxLines: null,
+                              expands: true,
+                              textAlignVertical: TextAlignVertical.top,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      'Edited ${formatLastEdited(_noteDateTime)}',
-                      style: TextStyle(color: Colors.white),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      border: Border(top: BorderSide(color: textColor.withValues(alpha: 0.3))),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.more_vert, color: Colors.white),
-                      onPressed: () {
-                        Utils.showShortToast('feature not implemented');
-                      },
+                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.palette_outlined, color: textColor),
+                          onPressed: () => _showColorPicker(context),
+                        ),
+                        Text(
+                          'Edited ${formatLastEdited(_noteDateTime)}',
+                          style: TextStyle(color: textColor),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.more_vert, color: textColor),
+                          onPressed: () {
+                            Utils.showShortToast('feature not implemented');
+                          },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -167,8 +177,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     //use original noteColor String or one set in _showColorPicker
     currentNote.pinStatus = _pinStatus;
 
-    // Skip if message is empty
-    if (currentNote.message.isEmpty) {
+    // Skip if both title and message are empty
+    if (currentNote.title.trim().isEmpty && currentNote.message.trim().isEmpty) {
       context.pop();
       return;
     }
@@ -196,8 +206,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   }
 
   void _showColorPicker(BuildContext context) {
+    final isTransparent = currentNote.color == NoteColors.transparent;
+    final sheetBg = isTransparent
+        ? Theme.of(context).colorScheme.surface
+        : hexToColor(currentNote.color);
     showModalBottomSheet(
-      backgroundColor: hexToColor(currentNote.color),
+      backgroundColor: sheetBg,
       context: context,
       builder: (context) {
         return NoteColorPicker(
@@ -224,7 +238,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: Text(_isEdit ? 'update failed' : 'save sailed'),
+          title: Text(_isEdit ? 'update failed' : 'save failed'),
           content: Text(exception?.toString() ?? 'unknown error occurred'),
           actions: [
             TextButton(

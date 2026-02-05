@@ -58,7 +58,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         Text(
                           'Sign In\nto Continue',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: size.width * 0.08,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
@@ -71,7 +71,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         Text(
                           'Please enter your credentials to access your secure notes.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: size.width * 0.04,
                             height: 1.5,
                           ),
@@ -148,10 +148,10 @@ class _SignInScreenState extends State<SignInScreen> {
                 if (authState is AuthenticationLoadingState)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: const Center(
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                      child: Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                         ),
                       ),
                     ),

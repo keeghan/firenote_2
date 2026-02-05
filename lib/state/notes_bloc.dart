@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firenote_2/data/note.dart';
@@ -38,6 +38,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
     on<UpdateNote>(_onNotesUpdated);
     on<SaveNote>(_onSaveNote);
     on<CleanupNotes>(_onCleanup);
+    on<SearchNotes>(_onSearchNotes);
     on<ResetNotesActionState>((event, emit) {
       emit(state.copyWith(
           exception: null, noteActStatus: NoteActionStatus.none));
@@ -84,7 +85,10 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       await _auth.currentUser?.getIdToken(true);
 
       //check internet connection
-      await InternetAddress.lookup('example.com');
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        throw Exception('check internet connection');
+      }
       final noteStream = _noteRef?.onValue ?? Stream.empty();
 
       // Using emit.forEach to handle the stream events
@@ -132,12 +136,13 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         },
       );
     } catch (e) {
+      final exception = e is Exception ? e : Exception(e.toString());
+      final isConnectivityError =
+          exception.toString().contains('check internet connection');
       emit(state.copyWith(
-        exception: e is SocketException
-            ? Exception('check internet connection')
-            : e as Exception,
+        exception: exception,
         noteStatus: NoteStatus.failure,
-        notes: e is SocketException ? null : state.notes,
+        notes: isConnectivityError ? null : state.notes,
       ));
     }
   }
@@ -246,6 +251,10 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
 
   void _onClearSelection(ClearSelection event, Emitter<NotesState> emit) {
     emit(state.copyWith(selectedNotes: {}, isMultiSelectionMode: false));
+  }
+
+  void _onSearchNotes(SearchNotes event, Emitter<NotesState> emit) {
+    emit(state.copyWith(searchQuery: event.query));
   }
 
   void _onToggleGridView(ToggleGridView event, Emitter<NotesState> emit) async {

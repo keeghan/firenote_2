@@ -4,6 +4,7 @@ import 'package:firenote_2/firebase_options.dart';
 import 'package:firenote_2/state/authentication_bloc.dart';
 import 'package:firenote_2/state/notes_bloc.dart';
 import 'package:firenote_2/state/notes_event.dart';
+import 'package:firenote_2/state/theme_cubit.dart';
 import 'package:firenote_2/ui/edit_note_screen.dart';
 import 'package:firenote_2/ui/password_recovery_screen.dart';
 import 'package:firenote_2/ui/sign_in_screen.dart';
@@ -20,6 +21,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final authBloc = AuthenticationBloc();
   final notesBloc = NotesBloc();
+  final themeCubit = ThemeCubit();
   //force go router to referesh on authchanges
   FirebaseAuth.instance.authStateChanges().listen((User? user) async {
     if (user != null) {
@@ -32,27 +34,33 @@ void main() async {
     }
     router.refresh();
   });
-  runApp(MyApp(authBloc: authBloc, notesBloc: notesBloc));
+  runApp(MyApp(authBloc: authBloc, notesBloc: notesBloc, themeCubit: themeCubit));
 }
 
 class MyApp extends StatelessWidget {
   final AuthenticationBloc authBloc;
   final NotesBloc notesBloc;
-  const MyApp({super.key, required this.authBloc, required this.notesBloc});
+  final ThemeCubit themeCubit;
+  const MyApp({super.key, required this.authBloc, required this.notesBloc, required this.themeCubit});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthenticationBloc>(create: (context) => authBloc),
-        BlocProvider<NotesBloc>(create: (context) => notesBloc)
+        BlocProvider<NotesBloc>(create: (context) => notesBloc),
+        BlocProvider<ThemeCubit>(create: (context) => themeCubit),
       ],
-      child: MaterialApp.router(
-        routerConfig: router,
-        title: 'Firenote',
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        //  themeMode: themeProvider.themeMode,
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            routerConfig: router,
+            title: 'Firenote',
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeMode,
+          );
+        },
       ),
     );
   }
@@ -122,7 +130,7 @@ final ThemeData lightTheme = ThemeData(
     primary: Colors.purple,
     secondary: Colors.purpleAccent,
     tertiary: Colors.deepPurple,
-    surface: Colors.grey[50]!,
+    surface: const Color(0xFFF5F5F5),
     error: Colors.red[700]!,
     onPrimary: Colors.white,
     onSecondary: Colors.white,

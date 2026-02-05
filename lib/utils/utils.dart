@@ -66,6 +66,22 @@ Color hexToColor(String hex) {
   return Color(int.parse('0x$hex'));
 }
 
+/// Returns the appropriate text color for a note based on its background.
+/// Transparent notes follow the theme; colored notes always use white.
+Color noteTextColor(String noteColorHex, Brightness brightness) {
+  if (noteColorHex == NoteColors.transparent) {
+    return brightness == Brightness.dark ? Colors.white : Colors.black;
+  }
+  return Colors.white;
+}
+
+Color noteHintColor(String noteColorHex, Brightness brightness) {
+  if (noteColorHex == NoteColors.transparent) {
+    return brightness == Brightness.dark ? Colors.white38 : Colors.black38;
+  }
+  return Colors.white38;
+}
+
 
 //Format DateTime String to match native(Firenote App)
 String getFormattedDateTime() {

@@ -16,9 +16,10 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return TextField(
       controller: textEditingController,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: onSurface),
       onChanged: onChanged,
       decoration: InputDecoration(
         hintText: hintText,
@@ -26,7 +27,7 @@ class AuthTextField extends StatelessWidget {
         helperText: errorText == null ? ' ' : null,
         errorStyle: const TextStyle(color: Colors.redAccent),
         helperStyle: const TextStyle(color: Colors.transparent),
-        hintStyle: const TextStyle(color: Colors.white70),
+        hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.5)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey, width: 1),

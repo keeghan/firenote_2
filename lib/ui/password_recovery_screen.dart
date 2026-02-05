@@ -47,7 +47,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                         // Back button
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                           padding: EdgeInsets.zero,
                           alignment: Alignment.centerLeft,
                           iconSize: size.width * 0.07,
@@ -59,7 +59,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                         Text(
                           'Recover Your\nPassword',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: size.width * 0.08,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
@@ -72,7 +72,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                         Text(
                           'Enter your email address and we\'ll send you a link to reset your password.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: size.width * 0.04,
                             height: 1.5,
                           ),
@@ -119,7 +119,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                             children: [
                               Icon(
                                 Icons.info_outline,
-                                color: Colors.orange.shade300,
+                                color: Colors.orange.shade700,
                                 size: size.width * 0.05,
                               ),
                               SizedBox(width: size.width * 0.03),
@@ -127,7 +127,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                                 child: Text(
                                   'Check your spam folder if you don\'t see the recovery email in your inbox within a few minutes.',
                                   style: TextStyle(
-                                    color: Colors.orange.shade100,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                                     fontSize: size.width * 0.035,
                                     height: 1.4,
                                   ),
@@ -147,10 +147,10 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                 if (authState is AuthenticationLoadingState)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: const Center(
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                      child: Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                         ),
                       ),
                     ),

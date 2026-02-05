@@ -45,9 +45,9 @@ class NotesScreen extends StatelessWidget {
           body: _buildBody(context, state),
           floatingActionButton: FloatingActionButton(
             backgroundColor: Theme.of(context).colorScheme.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+            shape: const CircleBorder(),
             onPressed: () => context.go('/notes/edit'),
-            child: const Icon(Icons.add, color: Colors.black),
+            child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
           ),
         );
       },
@@ -71,9 +71,24 @@ class NotesScreen extends StatelessWidget {
           return const Center(child: Text('No notes. Add a new note!'));
         }
 
+        final displayNotes = state.filteredNotes;
+
+        if (displayNotes.isEmpty) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Center(
+              key: ValueKey(state.searchQuery),
+              child: Text(
+                'No notes matching "${state.searchQuery}"',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+              ),
+            ),
+          );
+        }
+
         return NotesGrid(
           isGridView: state.isGridView,
-          notesList: state.notes!,
+          notesList: displayNotes,
           onTap: (note) {
             if (!state.isMultiSelectionMode) {
               context.go('/notes/edit', extra: note);
@@ -101,7 +116,7 @@ class NotesScreen extends StatelessWidget {
         children: [
           Text(
             errorMsg,
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
           ),
           const SizedBox(height: 16),
           AuthButton(

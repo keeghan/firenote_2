@@ -60,3 +60,11 @@ class UpdateNote extends NotesEvent {
 }
 
 class CleanupNotes extends NotesEvent {}
+
+class SearchNotes extends NotesEvent {
+  final String query;
+  SearchNotes(this.query);
+
+  @override
+  List<Object> get props => [query];
+}

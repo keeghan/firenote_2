@@ -59,7 +59,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         // Back button
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                           padding: EdgeInsets.zero,
                           alignment: Alignment.centerLeft,
                           iconSize: size.width * 0.07,
@@ -71,7 +71,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Text(
                           'Join Us\nToday',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: size.width * 0.08,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
@@ -84,7 +84,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Text(
                           'Create an account to start writing and securing your notes.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: size.width * 0.04,
                             height: 1.5,
                           ),
@@ -161,10 +161,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 if (authState is AuthenticationLoadingState)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: const Center(
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                      child: Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                         ),
                       ),
                     ),

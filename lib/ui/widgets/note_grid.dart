@@ -40,14 +40,17 @@ class NotesGrid extends StatelessWidget {
     }
 
     Widget noteListBuilder(Note note) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: isGridView ? 0 : 16),
-        child: NoteCard(
-          note: note,
-          //Pass Note to be edited
-          onTap: () => onTap(note),
-          onLongPress: () => onLongPress(note),
-          isSelected: selectedNotes.contains(note.id),
+      return _AnimatedNoteItem(
+        key: ValueKey(note.id),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: isGridView ? 0 : 16),
+          child: NoteCard(
+            note: note,
+            //Pass Note to be edited
+            onTap: () => onTap(note),
+            onLongPress: () => onLongPress(note),
+            isSelected: selectedNotes.contains(note.id),
+          ),
         ),
       );
     }
@@ -95,5 +98,54 @@ class NotesGrid extends StatelessWidget {
         ],
       );
     }
+  }
+}
+
+class _AnimatedNoteItem extends StatefulWidget {
+  final Widget child;
+
+  const _AnimatedNoteItem({super.key, required this.child});
+
+  @override
+  State<_AnimatedNoteItem> createState() => _AnimatedNoteItemState();
+}
+
+class _AnimatedNoteItemState extends State<_AnimatedNoteItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _opacity = Tween<double>(begin: 0, end: 1).animate(curve);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(curve);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
+      ),
+    );
   }
 }

@@ -35,20 +35,27 @@ class _NoteColorPickerState extends State<NoteColorPicker> {
   void initState() {
     super.initState();
     _selectedColor = widget.initialColor == hexToColor(NoteColors.transparent)
-        ? Colors.black
+        ? Colors.transparent // resolved to surface color in build
         : widget.initialColor;
   }
 
-  //Use black in app but transfer traansparent to Database
-  //for native app interoperability
   @override
   Widget build(BuildContext context) {
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Resolve transparent selection to the theme surface color
+    final effectiveSelected =
+        _selectedColor == Colors.transparent ? surfaceColor : _selectedColor;
+
     final colorList = widget.availableColors.map((colorHex) {
       Color color = hexToColor(colorHex);
-      if (colorHex == NoteColors.transparent) color = Colors.black;
+      if (colorHex == NoteColors.transparent) color = surfaceColor;
       return GestureDetector(
         onTap: () {
-          setState(() => _selectedColor = color);
+          setState(() => _selectedColor = colorHex == NoteColors.transparent
+              ? Colors.transparent
+              : color);
           widget.onColorChanged(colorHex);
         },
         child: Container(
@@ -57,29 +64,31 @@ class _NoteColorPickerState extends State<NoteColorPicker> {
           height: 30,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            //Different color options if used as grid in NoteScreen or list
-            // in EditNoteScreen
             color: (widget.isGridView && colorHex == NoteColors.transparent)
                 ? Colors.transparent
                 : color,
             border: widget.isGridView
                 ? (colorHex == NoteColors.transparent
-                    ? Border.all(color: Colors.grey[800]!, width: 2)
+                    ? Border.all(color: Colors.grey, width: 2)
                     : null)
-                : Border.all(color: Colors.white, width: 2),
+                : Border.all(
+                    color: isDark ? Colors.white : Colors.grey,
+                    width: 2,
+                  ),
           ),
         ),
       );
     }).toList();
 
-    //List for NoteScreen or List for EditNoteScreen
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: widget.isGridView ? EdgeInsets.all(8) : const EdgeInsets.fromLTRB(16, 32, 16, 32),
       decoration: BoxDecoration(
         borderRadius: widget.isGridView ? BorderRadius.all(Radius.circular(12)) : null,
-        color: widget.isGridView ? Colors.black.withAlpha(200) : _selectedColor,
-        border: Border.all(color: Colors.grey[800]!, width: 1),
+        color: widget.isGridView
+            ? (isDark ? Colors.black.withAlpha(200) : Colors.grey[300]!)
+            : effectiveSelected,
+        border: Border.all(color: Colors.grey, width: 1),
       ),
       child: widget.isGridView
           ? GridView.count(

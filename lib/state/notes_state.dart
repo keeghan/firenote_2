@@ -13,15 +13,17 @@ final class NotesState {
   final List<Note>? notes;
   final Set<Note> selectedNotes;
   final Exception? exception;
+  final String searchQuery;
 
   NotesState({
     this.noteActionStatus = NoteActionStatus.none,
     this.isMultiSelectionMode = false,
-    this.notes = null,
+    this.notes,
     this.selectedNotes = const <Note>{},
-    this.exception = null,
+    this.exception,
     this.isGridView = false,
     this.noteStatus = NoteStatus.initial,
+    this.searchQuery = '',
   });
 
   NotesState copyWith({
@@ -32,26 +34,36 @@ final class NotesState {
     List<Note>? notes,
     Set<Note>? selectedNotes,
     Exception? exception,
+    String? searchQuery,
   }) {
     return NotesState(
-      noteActionStatus: noteActStatus ?? this.noteActionStatus,
+      noteActionStatus: noteActStatus ?? noteActionStatus,
       isMultiSelectionMode: isMultiSelectionMode ?? this.isMultiSelectionMode,
       isGridView: isGridView ?? this.isGridView,
       noteStatus: noteStatus ?? this.noteStatus,
       notes: notes ?? this.notes,
       selectedNotes: selectedNotes ?? this.selectedNotes,
       exception: exception ?? this.exception,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 
-  List<Note> get pinnedNotes {
+  List<Note> get filteredNotes {
     if (notes == null) return [];
-    return notes!.where((note) => note.pinStatus).toList();
+    if (searchQuery.isEmpty) return notes!;
+    final query = searchQuery.toLowerCase();
+    return notes!.where((note) {
+      return note.title.toLowerCase().contains(query) ||
+          note.message.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  List<Note> get pinnedNotes {
+    return filteredNotes.where((note) => note.pinStatus).toList();
   }
 
   List<Note> get unPinnedNotes {
-    if (notes == null) return [];
-    return notes!.where((note) => !note.pinStatus).toList();
+    return filteredNotes.where((note) => !note.pinStatus).toList();
   }
 
   //   return notes,

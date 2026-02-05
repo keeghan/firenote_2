@@ -20,10 +20,11 @@ class AuthPasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return TextField(
       controller: textEditingController,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: onSurface),
       onChanged: onChanged,
       decoration: InputDecoration(
         hintText: hintText,
@@ -31,7 +32,7 @@ class AuthPasswordField extends StatelessWidget {
         helperText: errorText == null ? ' ' : null,
         errorStyle: const TextStyle(color: Colors.redAccent),
         helperStyle: const TextStyle(color: Colors.transparent),
-        hintStyle: const TextStyle(color: Colors.white70),
+        hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.5)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey, width: 1),
@@ -51,7 +52,7 @@ class AuthPasswordField extends StatelessWidget {
         suffixIcon: IconButton(
           icon: Icon(
             obscureText ? Icons.visibility : Icons.visibility_off,
-            color: Colors.white70,
+            color: onSurface.withValues(alpha: 0.5),
           ),
           onPressed: onVissibilityToggle,
         ),
